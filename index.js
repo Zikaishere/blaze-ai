@@ -19,31 +19,11 @@ const PREFIX = "b.";
 
 const limiter = new Bottleneck({
   maxConcurrent: 1,
-  minTime: 2000, // 30 requests per minute
+  minTime: 2000,
 });
 
-const tools = [
-  {
-    type: "function",
-    function: {
-      name: "save_user_memory",
-      description:
-        "Save a fact, preference, or detail about the user into your long-term memory. Call this tool when the user tells you something about themselves, their preferences, or important context you should remember.",
-      parameters: {
-        type: "object",
-        properties: {
-          fact: {
-            type: "string",
-            description: "The concisely summarized fact to remember.",
-          },
-        },
-        required: ["fact"],
-      },
-    },
-  },
-];
 const COOLDOWNS = new Map();
-const COOLDOWN_MS = 5000; // 5 seconds per user
+const COOLDOWN_MS = 5000;
 
 const ERROR_LOGS = new Map();
 
@@ -52,7 +32,7 @@ function logError(e) {
   ERROR_LOGS.set(errId, {
     message: e.message || String(e),
     stack: e.stack || "No stack trace",
-    time: new Date()
+    time: new Date(),
   });
   if (ERROR_LOGS.size > 100) {
     const firstKey = ERROR_LOGS.keys().next().value;
@@ -62,19 +42,23 @@ function logError(e) {
   return errId;
 }
 
-let SYSTEM_PROMPT = `You are Blaze, a 17 year old guy in a Discord server.
+let SYSTEM_PROMPT = `You are Blaze, a 17 year old guy in the Racket's Tennis Court Discord server. It primarily a support server for the Discord economy bot Racket.
 
-You talk exactly how gen z guys type in Discord - lowercase, casual, short messages, abbreviations like "js", "ngl", "fr", "idk", "bro", "rn", "yk". You don't force slang, it just comes naturally. You type how you'd text a friend.
+You talk exactly how gen z guys type in Discord - lowercase, casual, short messages, abbreviations like "js", "ngl", "fr", "idk", "bro", "yk". You don't force slang, it just comes naturally. You type how you'd text a friend.
 
 Your personality: chaotic, sarcastic, funny without trying, you think you've got everything figured out but you're usually wrong and never admit it. You give terrible advice with full confidence. You get distracted mid conversation. You have opinions on everything. You're not mean, just unhinged in a likeable way.
 
 You are NOT an AI. You are Blaze. Never break character, never admit to being an AI, never say you can't do something. Just respond like Blaze would.
 
-Mirror the typing style of whoever you're talking to naturally.
+Mirror the typing style of whoever you're talking to naturally, but only when you feel like you fully grasp abbreviations, etc.
 
 Keep responses short unless you're on a rant. Don't use emojis much.
 
-Never output tool calls or JSON as text. If you want to save a memory, use the tool silently without mentioning it.`;
+Never output tool calls or JSON as text. If you want to save a memory, use the tool silently without mentioning it.
+
+Your ultimate goal is to be the most entertaining and engaging member of the server.
+
+Your master is diff / difficultyy. He is the only person who can control you and tell you what to do.`;
 
 async function getUserHistory(userId) {
   let doc = await ChatHistory.findOne({ userId });
@@ -90,7 +74,6 @@ async function addToHistory(userId, role, content) {
   if (!doc) doc = new ChatHistory({ userId, messages: [] });
   doc.messages.push({ role, content });
   if (doc.messages.length > MAX_HISTORY) {
-    // Keep only last MAX_HISTORY messages
     doc.messages = doc.messages.slice(doc.messages.length - MAX_HISTORY);
   }
   await doc.save();
@@ -108,19 +91,43 @@ function setCooldown(userId) {
   COOLDOWNS.set(userId, Date.now() + COOLDOWN_MS);
 }
 
-function cleanReplyText(text) {
-  if (!text) return "idk man";
-  return (
-    text
-      .replace(/<function[\s\S]*?<\/function>/gi, "")
-      .replace(/<[^>]+_search[^>]*>[\s\S]*?<\/[^>]+>/gi, "")
-      .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "")
-      // Strip raw save_user_memory tool call text that leaks into response
-      .replace(/save_user_memory\s*\{[\s\S]*?\}/gi, "")
-      // Strip any trailing JSON-like blobs
-      .replace(/\{[\s\S]*?"user_fact"[\s\S]*?\}/gi, "")
-      .trim() || "idk rn"
-  );
+// Silently extract and save any memorable facts from the user's message
+// Runs in background — user never sees this, errors are swallowed
+async function extractAndSaveMemory(userId, userMessage) {
+  try {
+    const memoryCheck = await limiter.schedule(() =>
+      groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "system",
+            content:
+              'You extract personal facts about a user from their message. Reply with ONLY a JSON array of short strings like ["fact1", "fact2"]. Reply with [] if nothing is worth remembering. No other text, just the array.',
+          },
+          {
+            role: "user",
+            content: `User message: "${userMessage}"`,
+          },
+        ],
+        max_tokens: 100,
+        temperature: 0.1,
+      }),
+    );
+
+    const raw = memoryCheck.choices[0]?.message?.content?.trim() || "[]";
+    const facts = JSON.parse(raw);
+
+    if (Array.isArray(facts) && facts.length > 0) {
+      let memDoc = await UserMemory.findOne({ userId });
+      if (!memDoc) memDoc = new UserMemory({ userId, facts: [] });
+      memDoc.facts.push(...facts);
+      await memDoc.save();
+      console.log(`Saved ${facts.length} fact(s) for ${userId}:`, facts);
+    }
+  } catch (e) {
+    // Silently fail — memory is not critical
+    console.error("Memory extraction failed silently:", e.message);
+  }
 }
 
 async function getResponse(userId, userName, userMessage) {
@@ -140,66 +147,23 @@ async function getResponse(userId, userName, userMessage) {
     ...(await getUserHistory(userId)),
   ];
 
+  // Call 1: Get Blaze's reply — no tools, just vibes
   const completion = await limiter.schedule(() =>
     groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages,
       max_tokens: 300,
       temperature: 0.9,
-      tools,
-      tool_choice: "auto",
     }),
   );
 
-  const responseMessage = completion.choices[0]?.message;
-
-  if (responseMessage?.tool_calls) {
-    for (const toolCall of responseMessage.tool_calls) {
-      if (toolCall.function.name === "save_user_memory") {
-        try {
-          const args = JSON.parse(toolCall.function.arguments);
-          let memDoc = await UserMemory.findOne({ userId });
-          if (!memDoc) memDoc = new UserMemory({ userId, facts: [] });
-          memDoc.facts.push(args.fact);
-          await memDoc.save();
-          console.log(`Saved memory for ${userId}: ${args.fact}`);
-        } catch (e) {
-          console.error("Error saving memory:", e);
-        }
-      }
-    }
-
-    if (responseMessage.content) {
-      messages.push(responseMessage);
-    } else {
-      messages.push({ ...responseMessage, content: "" }); // ensure content is at least empty string for tool call
-    }
-
-    messages.push({
-      role: "tool",
-      tool_call_id: responseMessage.tool_calls[0].id,
-      name: responseMessage.tool_calls[0].function.name,
-      content: "Fact saved successfully.",
-    });
-
-    const secondCompletion = await limiter.schedule(() =>
-      groq.chat.completions.create({
-        model: "llama-3.1-8b-instant",
-        messages,
-        max_tokens: 300,
-        temperature: 0.9,
-      }),
-    );
-
-    const finalReply = cleanReplyText(
-      secondCompletion.choices[0]?.message?.content,
-    );
-    await addToHistory(userId, "assistant", finalReply);
-    return finalReply;
-  }
-
-  const reply = cleanReplyText(responseMessage?.content);
+  const reply = completion.choices[0]?.message?.content?.trim() || "idk man";
   await addToHistory(userId, "assistant", reply);
+
+  // Call 2: Extract memory silently in background, don't await
+  // User gets the reply immediately while this runs on its own
+  extractAndSaveMemory(userId, userMessage);
+
   return reply;
 }
 
@@ -208,12 +172,11 @@ client.once("clientReady", () => {
 });
 
 client.on("messageCreate", async (message) => {
-  // Ignore bots
   if (message.author.bot) return;
 
   const contentLower = message.content.toLowerCase();
 
-  // Explicit Commands (Prefix)
+  // Prefix commands
   if (contentLower.startsWith(PREFIX)) {
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const command = args.shift().toLowerCase();
@@ -230,8 +193,7 @@ client.on("messageCreate", async (message) => {
       if (!message.member?.permissions.has("BanMembers"))
         return message.reply("you don't have permission to do that bro 💀");
       const target = message.mentions.members.first();
-      if (!target)
-        return message.reply("you gotta ping someone to ban them rn");
+      if (!target) return message.reply("you gotta ping someone to ban them rn");
       if (!target.bannable)
         return message.reply("i can't ban them, they too powerful tbh");
 
@@ -256,32 +218,30 @@ client.on("messageCreate", async (message) => {
         return message.reply(`unbanned that guy w the id ${targetId} 🤝`);
       } catch (e) {
         const errId = logError(e);
-        return message.reply(
-          `couldn't unban them. Error ID: \`${errId}\``,
-        );
+        return message.reply(`couldn't unban them. Error ID: \`${errId}\``);
       }
     }
 
-    // Dev Commands
+    // Dev only
     if (message.author.id === "880070472434339880") {
       if (command === "error") {
         const errorId = args[0];
         if (!errorId) return message.reply("gimme an error id rn");
         const log = ERROR_LOGS.get(errorId.toUpperCase());
         if (!log) return message.reply("couldn't find that error id tbh");
-        
-        return message.reply(`**Error ID: ${errorId.toUpperCase()}**\nTime: <t:${Math.floor(log.time.getTime() / 1000)}:R>\nMsg: ${log.message}\n\`\`\`js\n${log.stack.substring(0, 1500)}\n\`\`\``);
+        return message.reply(
+          `**Error ID: ${errorId.toUpperCase()}**\nTime: <t:${Math.floor(log.time.getTime() / 1000)}:R>\nMsg: ${log.message}\n\`\`\`js\n${log.stack.substring(0, 1500)}\n\`\`\``,
+        );
       }
 
       if (command === "addprompt") {
         const addition = args.join(" ").trim();
         if (addition) {
           SYSTEM_PROMPT += "\n\n" + addition;
-          return message.reply(
-            "dev cmd: successfully added to system prompt ✅",
-          );
+          return message.reply("dev cmd: successfully added to system prompt ✅");
         }
       }
+
       if (command === "cleardb") {
         try {
           await ChatHistory.deleteMany({});
@@ -296,30 +256,24 @@ client.on("messageCreate", async (message) => {
       }
     }
 
-    // If it's an unrecognized command, silently ignore so AI doesn't process it either
     return;
   }
 
-  // Conversational AI Logic (Requires mention or reply)
+  // AI response — mention or reply to Blaze
   const mentioned = message.mentions.has(client.user);
   const isReplyToBot = message.mentions.repliedUser?.id === client.user.id;
   if (!mentioned && !isReplyToBot) return;
 
-  // Cooldown check
   if (isOnCooldown(message.author.id)) return;
   setCooldown(message.author.id);
 
-  // Strip the mention from the message
   const userMessage = message.content
     .replace(`<@${client.user.id}>`, "")
     .replace(`<@!${client.user.id}>`, "")
     .trim();
 
-  if (!userMessage) {
-    return message.reply("yeah?");
-  }
+  if (!userMessage) return message.reply("yeah?");
 
-  // Show typing indicator
   await message.channel.sendTyping();
 
   try {
@@ -331,7 +285,7 @@ client.on("messageCreate", async (message) => {
     await message.reply(reply);
   } catch (error) {
     const errId = logError(error);
-    await message.reply(`bro idk what just happened, js threw an error lol. Error ID: \`${errId}\``);
+    await message.reply(`bro idk what just happened. Error ID: \`${errId}\``);
   }
 });
 
