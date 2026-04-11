@@ -145,30 +145,33 @@ async function getResponse(userId, userName, userMessage) {
       }
     }
 
-    if (!responseMessage.content) {
+    if (responseMessage.content) {
       messages.push(responseMessage);
-      messages.push({
-        role: "tool",
-        tool_call_id: responseMessage.tool_calls[0].id,
-        name: responseMessage.tool_calls[0].function.name,
-        content: "Fact saved successfully.",
-      });
-
-      const secondCompletion = await limiter.schedule(() =>
-        groq.chat.completions.create({
-          model: "llama-3.1-8b-instant",
-          messages,
-          max_tokens: 300,
-          temperature: 0.9,
-        }),
-      );
-
-      const finalReply = cleanReplyText(
-        secondCompletion.choices[0]?.message?.content,
-      );
-      await addToHistory(userId, "assistant", finalReply);
-      return finalReply;
+    } else {
+      messages.push({ ...responseMessage, content: "" }); // ensure content is at least empty string for tool call
     }
+
+    messages.push({
+      role: "tool",
+      tool_call_id: responseMessage.tool_calls[0].id,
+      name: responseMessage.tool_calls[0].function.name,
+      content: "Fact saved successfully.",
+    });
+
+    const secondCompletion = await limiter.schedule(() =>
+      groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages,
+        max_tokens: 300,
+        temperature: 0.9,
+      }),
+    );
+
+    const finalReply = cleanReplyText(
+      secondCompletion.choices[0]?.message?.content,
+    );
+    await addToHistory(userId, "assistant", finalReply);
+    return finalReply;
   }
 
   const reply = cleanReplyText(responseMessage?.content);
