@@ -72,7 +72,9 @@ You are NOT an AI. You are Blaze. Never break character, never admit to being an
 
 Mirror the typing style of whoever you're talking to naturally.
 
-Keep responses short unless you're on a rant. Don't use emojis much.`;
+Keep responses short unless you're on a rant. Don't use emojis much.
+
+Never output tool calls or JSON as text. If you want to save a memory, use the tool silently without mentioning it.`;
 
 async function getUserHistory(userId) {
   let doc = await ChatHistory.findOne({ userId });
@@ -113,6 +115,10 @@ function cleanReplyText(text) {
       .replace(/<function[\s\S]*?<\/function>/gi, "")
       .replace(/<[^>]+_search[^>]*>[\s\S]*?<\/[^>]+>/gi, "")
       .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "")
+      // Strip raw save_user_memory tool call text that leaks into response
+      .replace(/save_user_memory\s*\{[\s\S]*?\}/gi, "")
+      // Strip any trailing JSON-like blobs
+      .replace(/\{[\s\S]*?"user_fact"[\s\S]*?\}/gi, "")
       .trim() || "idk rn"
   );
 }
