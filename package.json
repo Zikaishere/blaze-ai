@@ -1,0 +1,20 @@
+{
+  "name": "blaze-bot",
+  "version": "1.0.0",
+  "description": "Blaze - a chaotic AI Discord bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "bottleneck": "^2.19.5",
+    "discord.js": "^14.0.0",
+    "dotenv": "^16.0.0",
+    "groq-sdk": "^0.3.0",
+    "mongoose": "^8.23.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
