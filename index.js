@@ -15,6 +15,7 @@ const client = new Client({
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const MAX_HISTORY = 10;
+const PREFIX = "b!";
 
 const limiter = new Bottleneck({
   maxConcurrent: 1,
@@ -43,6 +44,23 @@ const tools = [
 ];
 const COOLDOWNS = new Map();
 const COOLDOWN_MS = 5000; // 5 seconds per user
+
+const ERROR_LOGS = new Map();
+
+function logError(e) {
+  const errId = Math.random().toString(36).substring(2, 8).toUpperCase();
+  ERROR_LOGS.set(errId, {
+    message: e.message || String(e),
+    stack: e.stack || "No stack trace",
+    time: new Date()
+  });
+  if (ERROR_LOGS.size > 100) {
+    const firstKey = ERROR_LOGS.keys().next().value;
+    ERROR_LOGS.delete(firstKey);
+  }
+  console.error(`[Error ${errId}]`, e);
+  return errId;
+}
 
 let SYSTEM_PROMPT = `You are Blaze, a 17 year old guy in a Discord server.
 
@@ -189,15 +207,15 @@ client.on("messageCreate", async (message) => {
 
   const contentLower = message.content.toLowerCase();
 
-  // Explicit Commands (b!prefix)
-  if (contentLower.startsWith("b!")) {
-    const args = message.content.slice(2).trim().split(/ +/);
+  // Explicit Commands (Prefix)
+  if (contentLower.startsWith(PREFIX)) {
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
     if (command === "help") {
-      let helpMsg = `**Blaze Commands:**\n- \`b!help\` - Shows this message\n- \`b!ban @user [reason]\` - Bans a user\n- \`b!unban <user_id>\` - Unbans a user`;
+      let helpMsg = `**Blaze Commands:**\n- \`${PREFIX}help\` - Shows this message\n- \`${PREFIX}ban @user [reason]\` - Bans a user\n- \`${PREFIX}unban <user_id>\` - Unbans a user`;
       if (message.author.id === "880070472434339880") {
-        helpMsg += `\n\n**Dev Commands:**\n- \`b!addprompt <text>\` - Appends to my system prompt\n- \`b!cleardb\` - Nukes all chat history and memories`;
+        helpMsg += `\n\n**Dev Commands:**\n- \`${PREFIX}addprompt <text>\` - Appends to my system prompt\n- \`${PREFIX}cleardb\` - Nukes all chat history and memories\n- \`${PREFIX}error <id>\` - Look up an error ID`;
       }
       return message.reply(helpMsg);
     }
@@ -216,7 +234,8 @@ client.on("messageCreate", async (message) => {
         await target.ban({ reason });
         return message.reply(`banned ${target.user.tag} fr. reason: ${reason}`);
       } catch (e) {
-        return message.reply("couldn't ban them: " + e.message);
+        const errId = logError(e);
+        return message.reply(`couldn't ban them rn. Error ID: \`${errId}\``);
       }
     }
 
@@ -230,14 +249,24 @@ client.on("messageCreate", async (message) => {
         await message.guild.bans.remove(targetId);
         return message.reply(`unbanned that guy w the id ${targetId} 🤝`);
       } catch (e) {
+        const errId = logError(e);
         return message.reply(
-          "couldn't unban them (maybe they not banned?): " + e.message,
+          `couldn't unban them. Error ID: \`${errId}\``,
         );
       }
     }
 
     // Dev Commands
     if (message.author.id === "880070472434339880") {
+      if (command === "error") {
+        const errorId = args[0];
+        if (!errorId) return message.reply("gimme an error id rn");
+        const log = ERROR_LOGS.get(errorId.toUpperCase());
+        if (!log) return message.reply("couldn't find that error id tbh");
+        
+        return message.reply(`**Error ID: ${errorId.toUpperCase()}**\nTime: <t:${Math.floor(log.time.getTime() / 1000)}:R>\nMsg: ${log.message}\n\`\`\`js\n${log.stack.substring(0, 1500)}\n\`\`\``);
+      }
+
       if (command === "addprompt") {
         const addition = args.join(" ").trim();
         if (addition) {
@@ -255,7 +284,8 @@ client.on("messageCreate", async (message) => {
             "dev cmd: nuked the entire database (history & memory) 💥",
           );
         } catch (e) {
-          return message.reply("dev error: " + e.message);
+          const errId = logError(e);
+          return message.reply(`dev error 💀 ID: \`${errId}\``);
         }
       }
     }
@@ -294,8 +324,8 @@ client.on("messageCreate", async (message) => {
     const reply = await getResponse(message.author.id, userName, userMessage);
     await message.reply(reply);
   } catch (error) {
-    console.error("Groq error:", error);
-    await message.reply("bro idk what just happened, js threw an error lol");
+    const errId = logError(error);
+    await message.reply(`bro idk what just happened, js threw an error lol. Error ID: \`${errId}\``);
   }
 });
 
