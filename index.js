@@ -15,7 +15,7 @@ const client = new Client({
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const MAX_HISTORY = 10;
-const PREFIX = "b!";
+const PREFIX = "b.";
 
 const limiter = new Bottleneck({
   maxConcurrent: 1,
