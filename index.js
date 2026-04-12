@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 const Groq = require("groq-sdk");
 const Bottleneck = require("bottleneck");
 const { connectDB, ChatHistory, UserMemory } = require("./db");
