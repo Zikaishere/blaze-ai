@@ -4,6 +4,8 @@ const Groq = require("groq-sdk");
 const Bottleneck = require("bottleneck");
 const { connectDB, ChatHistory, UserMemory } = require("./db");
 
+const SUGGESTION_CHANNEL_ID = "1246811318342652027";
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -193,7 +195,8 @@ client.on("messageCreate", async (message) => {
       if (!message.member?.permissions.has("BanMembers"))
         return message.reply("you don't have permission to do that bro 💀");
       const target = message.mentions.members.first();
-      if (!target) return message.reply("you gotta ping someone to ban them rn");
+      if (!target)
+        return message.reply("you gotta ping someone to ban them rn");
       if (!target.bannable)
         return message.reply("i can't ban them, they too powerful tbh");
 
@@ -238,7 +241,9 @@ client.on("messageCreate", async (message) => {
         const addition = args.join(" ").trim();
         if (addition) {
           SYSTEM_PROMPT += "\n\n" + addition;
-          return message.reply("dev cmd: successfully added to system prompt ✅");
+          return message.reply(
+            "dev cmd: successfully added to system prompt ✅",
+          );
         }
       }
 
@@ -252,6 +257,124 @@ client.on("messageCreate", async (message) => {
         } catch (e) {
           const errId = logError(e);
           return message.reply(`dev error 💀 ID: \`${errId}\``);
+        }
+      }
+
+      if (command === "sendrules") {
+        const embed = new EmbedBuilder()
+          .setColor("fffd6a")
+          .setTitle("Daffy Docs | Server Rules")
+          .setDescription(
+            `Below, you'll find the rules for our community Discord.`,
+          )
+          .addFields(
+            {
+              name: "Discord ToS & Community Guidelines",
+              value:
+                "We uphold Discord's Guidelines and terms of service. you can find both articles,  [Terms of Service](https://discord.com/terms) and [Community Guidelines](https://discord.com/guidelines)",
+            },
+
+            {
+              name: "Respecting Staff",
+              value:
+                "Staff members are to be respected and listened to. **All members must abide by their instructions** ***as long as they don't break the rules***.",
+            },
+
+            {
+              name: "Communication",
+              value:
+                "Members are requested to speak only English throughout all text channels. This helps the moderators and other staff to monitor the chats. (Greetings from other languages and other commonly known phrases are accepted).",
+            },
+
+            {
+              name: "Spam & Text Walls",
+              value:
+                "Spamming, chat flooding, Text blocks (enormous blocks of text), or any oter conversation that causes disruption are strictly disallowed.",
+            },
+
+            {
+              name: "Drama",
+              value:
+                "Do not argue or create drama or comments related to staff actions. Staff actions can be questioned by creating a ticket via <#1116326286927876137>. You are also asked to not talk about your punishments in any public chat.",
+            },
+
+            {
+              name: "Trolling",
+              value:
+                "Do not Bait / troll. Baiting is when someone tries to intentionally make a person angry by saying or doing things to annoy / upset them. Trolling refers to the act of the chat, making a nuisance out of yourself, deliberately making others uncomfortable, or attempting to start trouble.",
+            },
+
+            {
+              name: "Channel Use",
+              value:
+                "Use channels as they are intended. Breaking this rule may result in a warn or possibly a mute.",
+            },
+
+            {
+              name: "Self Promotion",
+              value:
+                "No self promotion. This includes links to other Discord servers, YouTube / Twitch / Mixer channels, etc. (Do not self-promote in DMs, either). Self promotion in the server is a warning, then mute. DM advertising is an instant ban.",
+            },
+
+            {
+              name: "Application Trolling",
+              value:
+                "Applications are there for people to apply, or to make an important decision (In that case a poll). Trolling these applications will lead to an instant kick from the server.",
+            },
+
+            {
+              name: "Roles & Ranks",
+              value:
+                "Do not ask for any roles / ranks. Appropriate roles will be assigned by staff.",
+            },
+
+            {
+              name: "Common Sense & Unlisted Rules",
+              value:
+                "Rules that aren't listed here but are common sense to be enforced can be enforced by staff. You may also get punished.",
+            },
+
+            {
+              name: "Ear Rape & VC Surfing",
+              value:
+                "Do not surf voice channels. (Switching Channels repeatedly). Ear rape is the act of playing a high pitched sound that can hurt one's ears. Doing so will lead to an instant ban.",
+            },
+          );
+
+        const embed2 = new EmbedBuilder()
+          .setColor("fffd6a")
+          .setTitle("Daffy Docs | Server Information")
+          .setDescription(`Hey there! Welcome to Daffy Docs.`);
+
+        message.channel.send({ embeds: [embed] });
+      }
+
+      if (command === "sforums") {
+        try {
+          const channel = await client.channels.fetch(SUGGESTION_CHANNEL_ID);
+
+          if (!channel || !channel.isThreadOnly()) {
+            return message.reply("that channel isn't a forum channel bro");
+          }
+
+          await channel.threads.create({
+            name: "Suggestion Guidelines",
+            message: {
+              content: `Welcome to the Suggestions channel.
+
+In this forum you can post your suggestions for things you believe should be changed in the community. With this forum there are guidelines you must follow in order to avoid punishment.
+
+- **All posts must be appropriate and not violate server rules.**
+- **Your suggestion must not have already been suggested before.**
+- **Respect others' opinions.**
+- **Suggestions must be realistic and benefit the server.**`,
+            },
+          });
+
+          return message.reply("posted suggestion guidelines 👍");
+        } catch (e) {
+          const errId = logError(e);
+          return message.reply(`failed to post. Error ID: \`${errId}\``);
         }
       }
     }
