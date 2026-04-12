@@ -170,7 +170,11 @@ async function getResponse(userId, userName, userMessage) {
 }
 
 client.once("clientReady", () => {
-  console.log(`Blaze is online as ${client.user.tag}`);
+    console.log(`Blaze is online as ${client.user.tag}`);
+   client.user.setPresence({
+      activities: [{ name: 'jus chillin, ping me if u need sum', type: 0 }],
+      status: 'idle',
+    });
 });
 
 client.on("messageCreate", async (message) => {
