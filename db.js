@@ -26,6 +26,13 @@ const chatHistorySchema = new mongoose.Schema({
 const userMemorySchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   facts: [String],
+
+  moderation: {
+    banned: { type: Boolean, default: false },
+    reason: { type: String, default: null },
+    bannedAt: { type: Date, default: null },
+    bannedBy: { type: String, default: null },
+  }
 });
 
 const ChatHistory = mongoose.model("ChatHistory", chatHistorySchema);

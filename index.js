@@ -196,38 +196,86 @@ client.on("messageCreate", async (message) => {
     }
 
     if (command === "ban") {
-      if (!message.member?.permissions.has("BanMembers"))
-        return message.reply("you don't have permission to do that bro 💀");
-      const target = message.mentions.members.first();
-      if (!target)
-        return message.reply("you gotta ping someone to ban them rn");
-      if (!target.bannable)
-        return message.reply("i can't ban them, they too powerful tbh");
+  if (message.author.id !== "880070472434339880")
+    return message.reply("nah");
 
-      const reason = args.slice(1).join(" ") || "No reason provided tbhhh";
-      try {
-        await target.ban({ reason });
-        return message.reply(`banned ${target.user.tag} fr. reason: ${reason}`);
-      } catch (e) {
-        const errId = logError(e);
-        return message.reply(`couldn't ban them rn. Error ID: \`${errId}\``);
-      }
-    }
+  const target = message.mentions.users.first();
+  if (!target) return message.reply("ping someone");
+
+  const reason = args.slice(1).join(" ") || "no reason";
+
+  try {
+    let user = await UserMemory.findOne({ userId: target.id });
+    if (!user) user = new UserMemory({ userId: target.id, facts: [] });
+    
+    user.moderation = user.moderation || {};
+    user.moderation = {
+      banned: true,
+      reason,
+      bannedAt: new Date(),
+      bannedBy: message.author.id,
+    };
+
+    await user.save();
+
+    return message.reply(`blocked ${target.tag} from using blaze`);
+  } catch (e) {
+    const errId = logError(e);
+    return message.reply(`error id: \`${errId}\``);
+  }
+}
 
     if (command === "unban") {
-      if (!message.member?.permissions.has("BanMembers"))
-        return message.reply("you can't do that bro 💀");
-      const targetId = args[0];
-      if (!targetId) return message.reply("gimme a user id to unban rn");
+  if (message.author.id !== "880070472434339880")
+    return message.reply("nah");
 
-      try {
-        await message.guild.bans.remove(targetId);
-        return message.reply(`unbanned that guy w the id ${targetId} 🤝`);
-      } catch (e) {
-        const errId = logError(e);
-        return message.reply(`couldn't unban them. Error ID: \`${errId}\``);
-      }
+  const target = message.mentions.users.first();
+  if (!target) return message.reply("ping someone");
+
+  try {
+    const user = await UserMemory.findOne({ userId: target.id });
+    if (!user) return message.reply("they weren't banned");
+
+    user.moderation.banned = false;
+    await user.save();
+
+    return message.reply(`unblocked ${target.tag}`);
+  } catch (e) {
+    const errId = logError(e);
+    return message.reply(`error id: \`${errId}\``);
+  }
+}
+
+if (command === "baninfo") {
+  if (message.author.id !== "880070472434339880")
+    return message.reply("nah");
+
+  const target =
+    message.mentions.users.first() ||
+    (args[0] ? await client.users.fetch(args[0]).catch(() => null) : null);
+
+  if (!target) return message.reply("ping someone or give an id");
+
+  try {
+    const user = await UserMemory.findOne({ userId: target.id });
+
+    if (!user || !user.moderation?.banned) {
+      return message.reply(`${target.tag} is not banned.`);
     }
+
+    const mod = user.moderation;
+
+    return message.reply(
+      `**Ban Info for ${target.tag}**
+Reason: ${mod.reason || "none"}
+Banned By: <@${mod.bannedBy}>
+Banned At: <t:${Math.floor(new Date(mod.bannedAt).getTime() / 1000)}:R>`
+    );
+  } catch (e) {
+    const errId = logError(e);
+    return message.reply(`error id: \`${errId}\``);
+  }
+}
 
     // Dev only
     if (message.author.id === "880070472434339880") {
@@ -390,6 +438,12 @@ In this forum you can post your suggestions for things you believe should be cha
   const mentioned = message.mentions.has(client.user);
   const isReplyToBot = message.mentions.repliedUser?.id === client.user.id;
   if (!mentioned && !isReplyToBot) return;
+
+  const userData = await UserMemory.findOne({ userId: message.author.id });
+
+if (userData?.moderation?.banned) {
+  return message.reply("You're banned from using Blaze."); // silent ignore
+}
 
   if (isOnCooldown(message.author.id)) return;
   setCooldown(message.author.id);
