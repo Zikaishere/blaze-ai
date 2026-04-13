@@ -7,6 +7,11 @@ const connectDB = async () => {
   }
   try {
     await mongoose.connect(process.env.MONGO_URI);
+    await Promise.all([
+      ChatHistory.syncIndexes(),
+      UserMemory.syncIndexes(),
+      ConversationState.syncIndexes(),
+    ]);
     console.log("MongoDB Connected successfully!");
   } catch (error) {
     console.error("MongoDB Connection Error:", error);
@@ -14,7 +19,10 @@ const connectDB = async () => {
 };
 
 const chatHistorySchema = new mongoose.Schema({
-  userId: { type: String, required: true, unique: true },
+  chatKey: { type: String, required: true, unique: true },
+  userId: { type: String, required: false },
+  channelId: { type: String, required: false },
+  guildId: { type: String, default: null },
   messages: [
     {
       role: String,
@@ -35,7 +43,16 @@ const userMemorySchema = new mongoose.Schema({
   }
 });
 
+const conversationStateSchema = new mongoose.Schema({
+  chatKey: { type: String, required: true, unique: true },
+  userId: { type: String, required: true },
+  channelId: { type: String, required: true },
+  guildId: { type: String, default: null },
+  devMode: { type: Boolean, default: false },
+});
+
 const ChatHistory = mongoose.model("ChatHistory", chatHistorySchema);
 const UserMemory = mongoose.model("UserMemory", userMemorySchema);
+const ConversationState = mongoose.model("ConversationState", conversationStateSchema);
 
-module.exports = { connectDB, ChatHistory, UserMemory };
+module.exports = { connectDB, ChatHistory, ConversationState, UserMemory };

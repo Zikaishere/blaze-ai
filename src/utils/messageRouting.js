@@ -1,0 +1,53 @@
+function stripBotMention(content, botUserId) {
+  return content
+    .replaceAll(`<@${botUserId}>`, "")
+    .replaceAll(`<@!${botUserId}>`, "")
+    .trim();
+}
+
+function isDevModeTrigger(content) {
+  const normalized = String(content || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+
+  return (
+    normalized === "dev mode" ||
+    normalized === "developer mode" ||
+    normalized === "enable dev mode" ||
+    normalized === "turn on dev mode" ||
+    normalized === "switch to dev mode"
+  );
+}
+
+function isDisableDevModeTrigger(content) {
+  const normalized = String(content || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+
+  return (
+    normalized === "normal mode" ||
+    normalized === "disable dev mode" ||
+    normalized === "turn off dev mode" ||
+    normalized === "exit dev mode"
+  );
+}
+
+function isBotConversationMessage(message, clientUserId) {
+  const mentioned = message.mentions.has(clientUserId);
+  const isReplyToBot = message.mentions.repliedUser?.id === clientUserId;
+
+  return {
+    isReplyToBot,
+    mentioned,
+    shouldHandle: mentioned || isReplyToBot,
+  };
+}
+
+module.exports = {
+  isBotConversationMessage,
+  isDisableDevModeTrigger,
+  isDevModeTrigger,
+  stripBotMention,
+};
