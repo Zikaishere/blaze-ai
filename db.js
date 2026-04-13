@@ -1,5 +1,33 @@
 const mongoose = require("mongoose");
 
+async function migrateLegacyChatHistories() {
+  const legacyDocs = await ChatHistory.find({
+    $or: [{ chatKey: { $exists: false } }, { chatKey: null }],
+  }).lean();
+
+  if (!legacyDocs.length) return;
+
+  for (const doc of legacyDocs) {
+    const fallbackUserId = doc.userId || String(doc._id);
+    const fallbackChannelId = doc.channelId || "legacy-channel";
+    const chatKey = `${fallbackChannelId}:${fallbackUserId}`;
+
+    await ChatHistory.updateOne(
+      { _id: doc._id },
+      {
+        $set: {
+          chatKey,
+          userId: doc.userId || fallbackUserId,
+          channelId: doc.channelId || fallbackChannelId,
+          guildId: doc.guildId || null,
+        },
+      },
+    );
+  }
+
+  console.log(`Migrated ${legacyDocs.length} legacy chat history document(s).`);
+}
+
 const connectDB = async () => {
   if (!process.env.MONGO_URI) {
     console.error("Missing MONGO_URI in .env file!");
@@ -7,6 +35,7 @@ const connectDB = async () => {
   }
   try {
     await mongoose.connect(process.env.MONGO_URI);
+    await migrateLegacyChatHistories();
     await Promise.all([
       ChatHistory.syncIndexes(),
       UserMemory.syncIndexes(),
