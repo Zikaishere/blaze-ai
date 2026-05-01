@@ -69,7 +69,17 @@ const userMemorySchema = new mongoose.Schema({
     reason: { type: String, default: null },
     bannedAt: { type: Date, default: null },
     bannedBy: { type: String, default: null },
-  }
+    infractions: [
+      {
+        type: { type: String, enum: ["warn", "kick", "ban"], required: true },
+        reason: { type: String, default: null },
+        moderatorId: { type: String, default: null },
+        timestamp: { type: Date, default: Date.now },
+        guildId: { type: String, default: null },
+        channelId: { type: String, default: null },
+      },
+    ],
+  },
 });
 
 const conversationStateSchema = new mongoose.Schema({

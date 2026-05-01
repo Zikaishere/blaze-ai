@@ -1,7 +1,8 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 const { connectDB } = require("../db");
 const { PREFIX } = require("./config");
-const { handlePrefixCommand } = require("./commands/handlers");
+const { handlePrefixCommand, handleMentionCommand, handleSlashCommand } = require("./cmds/handlers");
+const { slashCommands } = require("./cmds/slashCommands");
 const { getResponse } = require("./services/ai");
 const { setDevMode } = require("./services/conversationState");
 const { getUserMemory } = require("./services/memory");
@@ -23,12 +24,40 @@ const client = new Client({
   ],
 });
 
-client.once("clientReady", () => {
+client.once("ready", async () => {
   console.log(`Blaze is online as ${client.user.tag}`);
   client.user.setPresence({
     activities: [{ name: "jus chillin, ping me if u need sum", type: 0 }],
     status: "idle",
   });
+
+  try {
+    if (client.application) {
+      if (process.env.GUILD_ID) {
+        await client.application.commands.set(slashCommands, process.env.GUILD_ID);
+      } else {
+        await client.application.commands.set(slashCommands);
+      }
+      console.log("Slash commands registered");
+    }
+  } catch (error) {
+    console.error("Failed to register slash commands", error);
+  }
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  try {
+    await handleSlashCommand(interaction);
+  } catch (error) {
+    const errId = logError(error);
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp(`bro idk what just happened. Error ID: \`${errId}\``);
+    } else {
+      await interaction.reply(`bro idk what just happened. Error ID: \`${errId}\``);
+    }
+  }
 });
 
 client.on("messageCreate", async (message) => {
@@ -43,12 +72,12 @@ client.on("messageCreate", async (message) => {
   const routing = isBotConversationMessage(message, client.user.id);
   if (!routing.shouldHandle) return;
 
+  const mentionText = stripBotMention(message.content, client.user.id);
+  const handled = await handleMentionCommand(message, mentionText);
+  if (handled) return;
+
   const chatContext = getChatContext(message);
   const userData = await getUserMemory(message.author.id);
-
-  if (userData?.moderation?.banned) {
-    return message.reply("You're banned from using Blaze.");
-  }
 
   if (isOnCooldown(message.author.id)) return;
   setCooldown(message.author.id);
