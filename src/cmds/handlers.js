@@ -266,17 +266,31 @@ async function handleDevModeCommand(message, args) {
 
 async function handleErrorCommand(message, args) {
   const errorId = args[0];
-  if (!errorId) return message.reply("gimme an error id rn");
+  if (!errorId) {
+    const embed = new EmbedBuilder()
+      .setColor("FF0000")
+      .setDescription("Please provide an error ID.");
+    return message.reply({ embeds: [embed] });
+  }
 
   const log = getLoggedError(errorId);
-  if (!log) return message.reply("couldn't find that error id tbh");
+  if (!log) {
+    const embed = new EmbedBuilder()
+      .setColor("FF0000")
+      .setDescription("Error ID not found.");
+    return message.reply({ embeds: [embed] });
+  }
 
-  return message.reply(
-    `**Error ID: ${String(errorId).toUpperCase()}**\n` +
-      `Time: <t:${Math.floor(log.time.getTime() / 1000)}:R>\n` +
-      `Msg: ${log.message}\n` +
-      `\`\`\`js\n${log.stack.substring(0, 1500)}\n\`\`\``,
-  );
+  const errorTime = Math.floor(log.time.getTime() / 1000);
+  const embed = new EmbedBuilder()
+    .setColor("FF0000")
+    .setTitle(`Error ID: ${String(errorId).toUpperCase()}`)
+    .addFields(
+      { name: "Time", value: `<t:${errorTime}:R>`, inline: true },
+      { name: "Message", value: log.message, inline: false },
+      { name: "Stack Trace", value: `\`\`\`js\n${log.stack.substring(0, 1500)}\n\`\`\``, inline: false }
+    );
+  return message.reply({ embeds: [embed] });
 }
 
 async function handleAddPromptCommand(message, args) {
@@ -658,19 +672,36 @@ async function handleSlashCommand(interaction) {
   }
 
   if (command === "error") {
-    if (interaction.user.id !== OWNER_ID) return interaction.reply({ content: "nah", ephemeral: true });
+    if (interaction.user.id !== OWNER_ID) {
+      const embed = new EmbedBuilder().setColor("FF0000").setDescription("You don't have permission to use this command.");
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
     const errorId = interaction.options.getString("id");
-    if (!errorId) return interaction.reply({ content: "gimme an error id rn", ephemeral: true });
+    if (!errorId) {
+      const embed = new EmbedBuilder()
+        .setColor("FF0000")
+        .setDescription("Please provide an error ID.");
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
 
     const log = getLoggedError(errorId);
-    if (!log) return interaction.reply({ content: "couldn't find that error id tbh", ephemeral: true });
+    if (!log) {
+      const embed = new EmbedBuilder()
+        .setColor("FF0000")
+        .setDescription("Error ID not found.");
+      return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
 
-    return interaction.reply(
-      `**Error ID: ${String(errorId).toUpperCase()}**\n` +
-        `Time: <t:${Math.floor(log.time.getTime() / 1000)}:R>\n` +
-        `Msg: ${log.message}\n` +
-        `\`\`\`js\n${log.stack.substring(0, 1500)}\n\`\`\``,
-    );
+    const errorTime = Math.floor(log.time.getTime() / 1000);
+    const embed = new EmbedBuilder()
+      .setColor("FF0000")
+      .setTitle(`Error ID: ${String(errorId).toUpperCase()}`)
+      .addFields(
+        { name: "Time", value: `<t:${errorTime}:R>`, inline: true },
+        { name: "Message", value: log.message, inline: false },
+        { name: "Stack Trace", value: `\`\`\`js\n${log.stack.substring(0, 1500)}\n\`\`\``, inline: false }
+      );
+    return interaction.reply({ embeds: [embed] });
   }
 
   if (command === "addprompt") {
