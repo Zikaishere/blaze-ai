@@ -669,9 +669,7 @@ async function handleSlashCommand(interaction) {
       `**Error ID: ${String(errorId).toUpperCase()}**\n` +
         `Time: <t:${Math.floor(log.time.getTime() / 1000)}:R>\n` +
         `Msg: ${log.message}\n` +
-        `\
-\\`js\n${log.stack.substring(0, 1500)}\n\
-\\``,
+        `\`\`\`js\n${log.stack.substring(0, 1500)}\n\`\`\``,
     );
   }
 
