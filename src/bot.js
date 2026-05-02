@@ -27,6 +27,7 @@ const client = new Client({
 
 client.once("ready", async () => {
   console.log(`Blaze is online as ${client.user.tag}`);
+  console.log("DM support enabled: DirectMessages intent + Channel partial");
   client.user.setPresence({
     activities: [{ name: "jus chillin, ping me if u need sum", type: 0 }],
     status: "idle",
@@ -63,6 +64,16 @@ client.on("interactionCreate", async (interaction) => {
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
+
+  const isDirectMessage =
+    message.channel?.isDMBased?.() ||
+    (typeof message.inGuild === "function"
+      ? !message.inGuild()
+      : !message.guildId && !message.guild);
+
+  if (isDirectMessage) {
+    console.log(`Received DM from ${message.author.tag} (${message.author.id})`);
+  }
 
   const contentLower = message.content.toLowerCase();
   if (contentLower.startsWith(PREFIX)) {

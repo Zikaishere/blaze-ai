@@ -36,9 +36,10 @@ function isDisableDevModeTrigger(content) {
 
 function isBotConversationMessage(message, clientUserId) {
   const isDirectMessage =
-    typeof message.inGuild === "function"
+    message.channel?.isDMBased?.() ||
+    (typeof message.inGuild === "function"
       ? !message.inGuild()
-      : !message.guildId && !message.guild;
+      : !message.guildId && !message.guild);
   const mentioned = new RegExp(`<@!?${clientUserId}>`).test(message.content || "");
   const isReplyToBot = message.mentions.repliedUser?.id === clientUserId;
 
