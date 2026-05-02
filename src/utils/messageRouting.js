@@ -35,13 +35,18 @@ function isDisableDevModeTrigger(content) {
 }
 
 function isBotConversationMessage(message, clientUserId) {
+  const isDirectMessage =
+    typeof message.inGuild === "function"
+      ? !message.inGuild()
+      : !message.guildId && !message.guild;
   const mentioned = message.mentions.has(clientUserId);
   const isReplyToBot = message.mentions.repliedUser?.id === clientUserId;
 
   return {
+    isDirectMessage,
     isReplyToBot,
     mentioned,
-    shouldHandle: mentioned || isReplyToBot,
+    shouldHandle: isDirectMessage || mentioned || isReplyToBot,
   };
 }
 
