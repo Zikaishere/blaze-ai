@@ -39,7 +39,7 @@ function isBotConversationMessage(message, clientUserId) {
     typeof message.inGuild === "function"
       ? !message.inGuild()
       : !message.guildId && !message.guild;
-  const mentioned = message.mentions.has(clientUserId);
+  const mentioned = new RegExp(`<@!?${clientUserId}>`).test(message.content || "");
   const isReplyToBot = message.mentions.repliedUser?.id === clientUserId;
 
   return {

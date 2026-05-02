@@ -5,7 +5,6 @@ const { handlePrefixCommand, handleMentionCommand, handleSlashCommand } = requir
 const { slashCommands } = require("./cmds/slashCommands");
 const { getResponse } = require("./services/ai");
 const { setDevMode } = require("./services/conversationState");
-const { getUserMemory } = require("./services/memory");
 const { isOnCooldown, setCooldown } = require("./state/cooldowns");
 const { logError } = require("./state/errors");
 const { getChatContext } = require("./utils/chatContext");
@@ -79,7 +78,6 @@ client.on("messageCreate", async (message) => {
   if (handled) return;
 
   const chatContext = getChatContext(message);
-  const userData = await getUserMemory(message.author.id);
 
   if (isOnCooldown(message.author.id)) return;
   setCooldown(message.author.id);
@@ -109,9 +107,9 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  await message.channel.sendTyping();
-
   try {
+    await message.channel.sendTyping().catch(() => null);
+
     const userName =
       message.member?.displayName ||
       message.author.globalName ||
