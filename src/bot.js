@@ -1,6 +1,7 @@
-const { Client, GatewayIntentBits, Partials } = require("discord.js");
+const { Client, GatewayIntentBits, Partials, PermissionFlagsBits } = require("discord.js");
 const { connectDB } = require("../db");
-const { PREFIX } = require("./config");
+const { getPrefix, getEffectiveConfig } = require("./services/config");
+const { OWNER_ID } = require("./config");
 const { handlePrefixCommand, handleMentionCommand, handleSlashCommand } = require("./cmds/handlers");
 const { slashCommands } = require("./cmds/slashCommands");
 const { getResponse, loadSystemPrompt } = require("./services/ai");
@@ -71,8 +72,9 @@ client.on("messageCreate", async (message) => {
     console.log(`Received DM from ${message.author.tag} (${message.author.id})`);
   }
 
+  const prefix = await getPrefix(message.guildId);
   const contentLower = message.content.toLowerCase();
-  if (contentLower.startsWith(PREFIX)) {
+  if (contentLower.startsWith(prefix.toLowerCase())) {
     await handlePrefixCommand(message);
     return;
   }
@@ -85,12 +87,20 @@ client.on("messageCreate", async (message) => {
   if (handled) return;
 
   const chatContext = getChatContext(message);
+  const config = await getEffectiveConfig(message.guildId, message.author.id);
 
-  if (isOnCooldown(message.author.id)) return;
-  setCooldown(message.author.id);
+  if (!config.aiEnabled) return;
+  if (config.allowedChannels.length > 0 && message.guildId && !config.allowedChannels.includes(message.channelId)) return;
 
-  const userMessage = stripBotMention(message.content, client.user.id);
+  if (isOnCooldown(message.author.id, config.cooldownMs)) return;
+  setCooldown(message.author.id, config.cooldownMs);
+
+  let userMessage = stripBotMention(message.content, client.user.id);
   if (!userMessage) return message.reply("yeah?");
+
+  const parsed = parseOverrides(userMessage, message.author.id, message.guild, message.member);
+  userMessage = parsed.clean;
+  Object.assign(config, parsed.overrides);
 
   try {
     await message.channel.sendTyping().catch(() => null);
@@ -100,13 +110,51 @@ client.on("messageCreate", async (message) => {
       message.author.globalName ||
       message.author.username;
 
-    const response = await getResponse(chatContext, userName, userMessage);
+    const response = await getResponse(chatContext, userName, userMessage, config);
     await sendChunkedReply(message, response.reply);
   } catch (error) {
     const errId = await logError(error);
     await message.reply(`bro idk what just happened. Error ID: \`${errId}\``);
   }
 });
+
+function parseOverrides(text, userId, guild, member) {
+  const overrides = {};
+  const isDev = userId === OWNER_ID;
+  const isAdmin = isDev || (guild && member?.permissions.has(PermissionFlagsBits.Administrator));
+
+  const adminFlags = [
+    { pattern: /--no-memory\b/gi, apply: () => { overrides.memoryEnabled = false; } },
+    { pattern: /--long\b/gi, apply: () => { overrides.maxTokens = 1000; } },
+    { pattern: /--short\b/gi, apply: () => { overrides.maxTokens = 150; } },
+    { pattern: /--exact\b/gi, apply: () => { overrides.temperature = 0.3; } },
+    { pattern: /--creative\b/gi, apply: () => { overrides.temperature = 1.2; } },
+  ];
+
+  const devFlags = [
+    { pattern: /--model\s+(\S+)/gi, apply: (_, m) => { overrides.model = m; } },
+    { pattern: /--temp\s+([\d.]+)/gi, apply: (_, v) => { overrides.temperature = parseFloat(v); } },
+    { pattern: /--tokens\s+(\d+)/gi, apply: (_, n) => { overrides.maxTokens = parseInt(n, 10); } },
+  ];
+
+  let clean = text;
+  for (const { pattern, apply } of adminFlags) {
+    if (isAdmin) {
+      clean = clean.replace(pattern, (match, ...groups) => { apply(match, ...groups); return ""; });
+    } else {
+      clean = clean.replace(pattern, "");
+    }
+  }
+  for (const { pattern, apply } of devFlags) {
+    if (isDev) {
+      clean = clean.replace(pattern, (match, ...groups) => { apply(match, ...groups); return ""; });
+    } else {
+      clean = clean.replace(pattern, "");
+    }
+  }
+
+  return { clean: clean.replace(/\s+/g, " ").trim(), overrides };
+}
 
 async function sendChunkedReply(message, text) {
   const maxLen = 2000;

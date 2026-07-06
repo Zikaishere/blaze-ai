@@ -1,5 +1,5 @@
-const { PREFIX } = require("../config");
-const { buildHelpMessage } = require("./help");
+const { buildHelpEmbed } = require("./help");
+const { getPrefix } = require("../services/config");
 const {
   isOwner,
   isModerator,
@@ -30,12 +30,20 @@ const {
   handleSlashAddPrompt,
   handleSlashClearDb,
 } = require("./owner");
+const {
+  handleConfigViewPrefix,
+  handleSlashConfig,
+  handleSlashFact,
+} = require("./config");
 
 async function handlePrefixCommand(message) {
-  const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+  const prefix = await getPrefix(message.guildId);
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = (args.shift() || "").toLowerCase();
 
-  if (command === "help") return message.reply(buildHelpMessage(message.author.id, isModerator(message)));
+  if (command === "help") return message.reply({ embeds: [buildHelpEmbed(message.author.id, isModerator(message), prefix)] });
+  if (command === "config" || command === "cfg") return handleConfigViewPrefix(message, args);
+  if (command === "fact") return handleConfigViewPrefix(message, ["fact", ...args]);
   if (command === "warn") return handleWarnCommand(message, args);
   if (command === "kick") return handleKickCommand(message, args);
   if (command === "ban") return handleBanCommand(message, args);
@@ -90,7 +98,7 @@ async function handleSlashCommand(interaction) {
   const reason = interaction.options.getString("reason") || "no reason";
 
   if (command === "help") {
-    return interaction.reply(buildHelpMessage(interaction.user.id, isModeratorInteraction(interaction)));
+    return interaction.reply({ embeds: [buildHelpEmbed(interaction.user.id, isModeratorInteraction(interaction), "/")] });
   }
   if (command === "warn") return handleSlashWarn(interaction, target, reason);
   if (command === "kick") return handleSlashKick(interaction, target, reason);
@@ -99,6 +107,8 @@ async function handleSlashCommand(interaction) {
   if (command === "history") return handleSlashHistory(interaction, target);
   if (command === "baninfo") return handleSlashBanInfo(interaction, target);
   if (command === "banlist") return handleSlashBanList(interaction);
+  if (command === "config") return handleSlashConfig(interaction);
+  if (command === "fact") return handleSlashFact(interaction);
   if (command === "error") return handleSlashError(interaction);
   if (command === "addprompt") return handleSlashAddPrompt(interaction);
   if (command === "cleardb") return handleSlashClearDb(interaction);

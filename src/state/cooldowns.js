@@ -1,8 +1,8 @@
-const { COOLDOWN_MS } = require("../config");
-
+const DEFAULT_COOLDOWN = 3000;
 const COOLDOWNS = new Map();
 
-function isOnCooldown(userId) {
+function isOnCooldown(userId, cooldownMs) {
+  const effective = cooldownMs || DEFAULT_COOLDOWN;
   if (!COOLDOWNS.has(userId)) return false;
 
   const expires = COOLDOWNS.get(userId);
@@ -12,8 +12,9 @@ function isOnCooldown(userId) {
   return false;
 }
 
-function setCooldown(userId) {
-  COOLDOWNS.set(userId, Date.now() + COOLDOWN_MS);
+function setCooldown(userId, cooldownMs) {
+  const effective = cooldownMs || DEFAULT_COOLDOWN;
+  COOLDOWNS.set(userId, Date.now() + effective);
 }
 
 module.exports = {

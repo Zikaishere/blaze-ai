@@ -4,6 +4,8 @@ const UserMemory = require("./src/models/UserMemory");
 const ConversationState = require("./src/models/ConversationState");
 const ErrorLog = require("./src/models/ErrorLog");
 const SystemPrompt = require("./src/models/SystemPrompt");
+const GuildConfig = require("./src/models/GuildConfig");
+const UserConfig = require("./src/models/UserConfig");
 
 async function connectDB(retries = 3) {
   if (!process.env.MONGO_URI) {
@@ -20,6 +22,8 @@ async function connectDB(retries = 3) {
         ConversationState.syncIndexes(),
         ErrorLog.syncIndexes(),
         SystemPrompt.syncIndexes(),
+        GuildConfig.syncIndexes(),
+        UserConfig.syncIndexes(),
       ]);
       console.log("MongoDB Connected successfully!");
       return;
@@ -34,4 +38,4 @@ async function connectDB(retries = 3) {
   }
 }
 
-module.exports = { connectDB, ChatHistory, ConversationState, UserMemory, ErrorLog, SystemPrompt };
+module.exports = { connectDB, ChatHistory, ConversationState, UserMemory, ErrorLog, SystemPrompt, GuildConfig, UserConfig };

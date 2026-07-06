@@ -1,5 +1,5 @@
 const SystemPrompt = require("../models/SystemPrompt");
-const { BASE_SYSTEM_PROMPT, DEFAULT_MODEL } = require("../config");
+const { BASE_SYSTEM_PROMPT } = require("../config");
 const { addToChatHistory, getChatHistory } = require("./chatHistory");
 const { groq, limiter, withRetry } = require("./groq");
 const { extractAndSaveMemory, getUserMemory } = require("./memory");
@@ -31,7 +31,14 @@ async function appendToSystemPrompt(addition) {
   }
 }
 
-function buildSystemPrompt(userName, userMemory) {
+const STYLE_HINTS = {
+  short: "\nKeep responses very short and concise.",
+  long: "\nFeel free to give detailed, thorough responses.",
+  casual: "\nBe extra casual and chill in your tone.",
+  formal: "\nBe more formal and proper in your tone.",
+};
+
+function buildSystemPrompt(userName, userMemory, config) {
   let prompt = BASE_SYSTEM_PROMPT +
     `\n\nThe user you are currently talking to is named "${userName}".`;
 
@@ -44,6 +51,19 @@ function buildSystemPrompt(userName, userMemory) {
     prompt += `\n\nKey facts:\n- ${uniqueFacts.join("\n- ")}`;
   }
 
+  const style = config?.style || "default";
+  if (style !== "default" && STYLE_HINTS[style]) {
+    prompt += STYLE_HINTS[style];
+  }
+
+  if (config?.customFacts?.length) {
+    prompt += `\n\nFacts ${userName} shared about themself:\n- ${config.customFacts.join("\n- ")}`;
+  }
+
+  if (config?.guildPromptAdditions?.length) {
+    prompt += `\n\nServer-specific context:\n${config.guildPromptAdditions.join("\n")}`;
+  }
+
   if (additions.length > 0) {
     prompt += `\n\nAdditional context:\n${additions.join("\n")}`;
   }
@@ -51,7 +71,7 @@ function buildSystemPrompt(userName, userMemory) {
   return prompt;
 }
 
-async function getResponse(chatContext, userName, userMessage) {
+async function getResponse(chatContext, userName, userMessage, config) {
   await addToChatHistory(chatContext, "user", userMessage);
 
   const [userMemory, history] = await Promise.all([
@@ -62,18 +82,22 @@ async function getResponse(chatContext, userName, userMessage) {
   const messages = [
     {
       role: "system",
-      content: buildSystemPrompt(userName, userMemory),
+      content: buildSystemPrompt(userName, userMemory, config),
     },
     ...history,
   ];
 
+  const effectiveModel = config?.model || "llama-3.3-70b-versatile";
+  const effectiveMaxTokens = config?.maxTokens || 500;
+  const effectiveTemperature = config?.temperature ?? 0.9;
+
   const completion = await limiter.schedule(() =>
     withRetry(() =>
       groq.chat.completions.create({
-        model: DEFAULT_MODEL,
+        model: effectiveModel,
         messages,
-        max_tokens: 500,
-        temperature: 0.9,
+        max_tokens: effectiveMaxTokens,
+        temperature: effectiveTemperature,
       }),
     ),
   );
@@ -81,7 +105,9 @@ async function getResponse(chatContext, userName, userMessage) {
   const reply = completion.choices[0]?.message?.content?.trim() || "idk man";
   await addToChatHistory(chatContext, "assistant", reply);
 
-  extractAndSaveMemory(chatContext, userName, userMessage, history);
+  if (config?.memoryEnabled !== false) {
+    extractAndSaveMemory(chatContext, userName, userMessage, history);
+  }
 
   return { reply };
 }

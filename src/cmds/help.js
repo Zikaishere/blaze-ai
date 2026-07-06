@@ -1,35 +1,61 @@
-const { OWNER_ID, PREFIX } = require("../config");
+const { EmbedBuilder } = require("discord.js");
+const { OWNER_ID } = require("../config");
 
-function buildHelpMessage(authorId, isMod) {
-  let helpMsg =
-    `**Blaze Commands:**\n` +
-    `- \`${PREFIX}help\` - Shows this message\n` +
-    `- Reply to Blaze or ping him to talk\n` +
-    `- DM Blaze to chat privately`;
+function buildHelpEmbed(authorId, isMod, prefix) {
+  const p = prefix || "b.";
+
+  const embed = new EmbedBuilder()
+    .setColor(0xff6a00)
+    .setTitle("Blaze Commands")
+    .setDescription("chaotic ai energy, now in your server")
+    .addFields(
+      {
+        name: "💬 Chat",
+        value:
+          `- \`${p}help\` — this message\n` +
+          `- \`${p}config\` — view/change settings\n` +
+          `- \`${p}config style <style>\` — set your chat style\n` +
+          `- \`${p}config memory on/off\` — toggle memory for yourself\n` +
+          `- \`${p}fact add <text>\` — save a fact about yourself\n` +
+          `- Ping me or reply to talk\n` +
+          `- DM me to chat privately`,
+        inline: false,
+      },
+    );
 
   if (isMod) {
-    helpMsg +=
-      `\n\n**Moderation Commands:**\n` +
-      `- \`${PREFIX}warn @user [reason]\` - Warns a user\n` +
-      `- \`${PREFIX}kick @user [reason]\` - Kicks a user and records the infraction\n` +
-      `- \`${PREFIX}ban @user [reason]\` - Bans a user and records the infraction\n` +
-      `- \`${PREFIX}unban @user\` - Unbans a user\n` +
-      `- \`${PREFIX}history @user\` - Shows a user's infraction history\n` +
-      `- \`${PREFIX}banlist\` - Lists recorded ban infractions\n` +
-      `- You can also mention Blaze directly with mod commands like \`@blaze warn @user [reason]\`\n`;
+    embed.addFields({
+      name: "🛡️ Moderation",
+      value:
+        `- \`${p}warn @user [reason]\` — warn a user\n` +
+        `- \`${p}kick @user [reason]\` — kick + record infraction\n` +
+        `- \`${p}ban @user [reason]\` — ban + record infraction\n` +
+        `- \`${p}unban @user\` — unban a user\n` +
+        `- \`${p}history @user\` — view infractions\n` +
+        `- \`${p}banlist\` — list all banned users\n` +
+        `- \`${p}config prefix <new>\` — change server prefix\n` +
+        `- Mention me directly too: \`@Blaze warn @user [reason]\``,
+      inline: false,
+    });
   }
 
   if (authorId === OWNER_ID) {
-    helpMsg +=
-      `\n\n**Dev Commands:**\n` +
-      `- \`${PREFIX}addprompt <text>\` - Appends to my system prompt\n` +
-      `- \`${PREFIX}cleardb\` - Nukes all chat history and memories\n` +
-      `- \`${PREFIX}error <id>\` - Look up an error ID`;
+    embed.addFields({
+      name: "⚙️ Owner",
+      value:
+        `- \`${p}config model <name>\` — change model for this server\n` +
+        `- \`${p}config prompt <text>\` — add server prompt addition\n` +
+        `- \`${p}addprompt <text>\` — append to global system prompt\n` +
+        `- \`${p}cleardb\` — wipe all history & memories\n` +
+        `- \`${p}error <id>\` — look up an error by ID`,
+      inline: false,
+    });
   }
 
-  return helpMsg;
+  embed.setFooter({ text: "blaze ai • the chaotic energy you didnt ask for" });
+  return embed;
 }
 
 module.exports = {
-  buildHelpMessage,
+  buildHelpEmbed,
 };
