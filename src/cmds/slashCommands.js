@@ -31,22 +31,6 @@ const slashCommands = [
     .addUserOption((option) => option.setName("target").setDescription("User to inspect").setRequired(true)),
   new SlashCommandBuilder().setName("banlist").setDescription("Lists recorded ban infractions"),
   new SlashCommandBuilder()
-    .setName("devmode")
-    .setDescription("Toggle dev mode for this chat")
-    .addStringOption((option) =>
-      option
-        .setName("mode")
-        .setDescription("on or off")
-        .addChoices({ name: "on", value: "on" }, { name: "off", value: "off" })
-        .setRequired(false),
-    ),
-  new SlashCommandBuilder()
-    .setName("sendrules")
-    .setDescription("Posts the server rules embed"),
-  new SlashCommandBuilder()
-    .setName("sforums")
-    .setDescription("Posts suggestion forum guidelines"),
-  new SlashCommandBuilder()
     .setName("error")
     .setDescription("Look up an error ID")
     .addStringOption((option) => option.setName("id").setDescription("Error ID").setRequired(true)),

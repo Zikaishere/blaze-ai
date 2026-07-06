@@ -5,35 +5,6 @@ function stripBotMention(content, botUserId) {
     .trim();
 }
 
-function isDevModeTrigger(content) {
-  const normalized = String(content || "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ");
-
-  return (
-    normalized === "dev mode" ||
-    normalized === "developer mode" ||
-    normalized === "enable dev mode" ||
-    normalized === "turn on dev mode" ||
-    normalized === "switch to dev mode"
-  );
-}
-
-function isDisableDevModeTrigger(content) {
-  const normalized = String(content || "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ");
-
-  return (
-    normalized === "normal mode" ||
-    normalized === "disable dev mode" ||
-    normalized === "turn off dev mode" ||
-    normalized === "exit dev mode"
-  );
-}
-
 function isBotConversationMessage(message, clientUserId) {
   const isDirectMessage =
     message.channel?.isDMBased?.() ||
@@ -53,7 +24,5 @@ function isBotConversationMessage(message, clientUserId) {
 
 module.exports = {
   isBotConversationMessage,
-  isDisableDevModeTrigger,
-  isDevModeTrigger,
   stripBotMention,
 };

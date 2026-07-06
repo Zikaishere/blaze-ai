@@ -1,27 +1,51 @@
-const { BASE_SYSTEM_PROMPT, DEFAULT_MODEL, DEV_MODEL } = require("../config");
+const SystemPrompt = require("../models/SystemPrompt");
+const { BASE_SYSTEM_PROMPT, DEFAULT_MODEL } = require("../config");
 const { addToChatHistory, getChatHistory } = require("./chatHistory");
-const { getConversationState } = require("./conversationState");
-const { groq, limiter } = require("./groq");
+const { groq, limiter, withRetry } = require("./groq");
 const { extractAndSaveMemory, getUserMemory } = require("./memory");
 
-let systemPrompt = BASE_SYSTEM_PROMPT;
+let additions = [];
 
-function appendToSystemPrompt(addition) {
-  systemPrompt += `\n\n${addition}`;
+async function loadSystemPrompt() {
+  try {
+    const doc = await SystemPrompt.findOne({ key: "additions" });
+    if (doc && doc.additions.length > 0) {
+      additions = doc.additions;
+      console.log(`Loaded ${additions.length} system prompt addition(s)`);
+    }
+  } catch (error) {
+    console.error("Failed to load system prompt additions:", error.message);
+  }
 }
 
-function buildSystemPrompt(userName, userMemory, devMode) {
-  let prompt =
-    systemPrompt +
+async function appendToSystemPrompt(addition) {
+  additions.push(addition);
+  try {
+    await SystemPrompt.findOneAndUpdate(
+      { key: "additions" },
+      { $push: { additions: addition } },
+      { upsert: true },
+    );
+  } catch (error) {
+    console.error("Failed to persist system prompt addition:", error.message);
+  }
+}
+
+function buildSystemPrompt(userName, userMemory) {
+  let prompt = BASE_SYSTEM_PROMPT +
     `\n\nThe user you are currently talking to is named "${userName}".`;
 
-  if (userMemory?.facts?.length) {
-    prompt += `\n\nWhat you know about this user:\n- ${userMemory.facts.join("\n- ")}`;
+  if (userMemory?.profile) {
+    prompt += `\n\nWhat you remember about this user:\n${userMemory.profile}`;
   }
 
-  if (devMode) {
-    prompt +=
-      "\n\nYou are in dev mode for this chat only. Keep the same Blaze personality, but be more precise, more capable in technical conversations, and better at sustained back-and-forth problem solving.";
+  if (userMemory?.facts?.length) {
+    const uniqueFacts = [...new Set(userMemory.facts)];
+    prompt += `\n\nKey facts:\n- ${uniqueFacts.join("\n- ")}`;
+  }
+
+  if (additions.length > 0) {
+    prompt += `\n\nAdditional context:\n${additions.join("\n")}`;
   }
 
   return prompt;
@@ -30,41 +54,40 @@ function buildSystemPrompt(userName, userMemory, devMode) {
 async function getResponse(chatContext, userName, userMessage) {
   await addToChatHistory(chatContext, "user", userMessage);
 
-  const [userMemory, conversationState, history] = await Promise.all([
+  const [userMemory, history] = await Promise.all([
     getUserMemory(chatContext.userId),
-    getConversationState(chatContext),
     getChatHistory(chatContext.chatKey),
   ]);
 
   const messages = [
     {
       role: "system",
-      content: buildSystemPrompt(userName, userMemory, conversationState.devMode),
+      content: buildSystemPrompt(userName, userMemory),
     },
     ...history,
   ];
 
   const completion = await limiter.schedule(() =>
-    groq.chat.completions.create({
-      model: conversationState.devMode ? DEV_MODEL : DEFAULT_MODEL,
-      messages,
-      max_tokens: 300,
-      temperature: 0.9,
-    }),
+    withRetry(() =>
+      groq.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages,
+        max_tokens: 500,
+        temperature: 0.9,
+      }),
+    ),
   );
 
   const reply = completion.choices[0]?.message?.content?.trim() || "idk man";
   await addToChatHistory(chatContext, "assistant", reply);
 
-  extractAndSaveMemory(chatContext.userId, userMessage);
+  extractAndSaveMemory(chatContext, userName, userMessage, history);
 
-  return {
-    devMode: conversationState.devMode,
-    reply,
-  };
+  return { reply };
 }
 
 module.exports = {
   appendToSystemPrompt,
   getResponse,
+  loadSystemPrompt,
 };

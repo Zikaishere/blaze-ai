@@ -4,8 +4,8 @@ function buildHelpMessage(authorId, isMod) {
   let helpMsg =
     `**Blaze Commands:**\n` +
     `- \`${PREFIX}help\` - Shows this message\n` +
-    `- \`${PREFIX}devmode [on|off]\` - Switches dev mode for your current chat only\n` +
-    `- Reply to Blaze to continue the convo without pinging him again`;
+    `- Reply to Blaze or ping him to talk\n` +
+    `- DM Blaze to chat privately`;
 
   if (isMod) {
     helpMsg +=

@@ -3,15 +3,12 @@ const { connectDB } = require("../db");
 const { PREFIX } = require("./config");
 const { handlePrefixCommand, handleMentionCommand, handleSlashCommand } = require("./cmds/handlers");
 const { slashCommands } = require("./cmds/slashCommands");
-const { getResponse } = require("./services/ai");
-const { setDevMode } = require("./services/conversationState");
+const { getResponse, loadSystemPrompt } = require("./services/ai");
 const { isOnCooldown, setCooldown } = require("./state/cooldowns");
 const { logError } = require("./state/errors");
 const { getChatContext } = require("./utils/chatContext");
 const {
   isBotConversationMessage,
-  isDisableDevModeTrigger,
-  isDevModeTrigger,
   stripBotMention,
 } = require("./utils/messageRouting");
 
@@ -27,7 +24,6 @@ const client = new Client({
 
 client.once("ready", async () => {
   console.log(`Blaze is online as ${client.user.tag}`);
-  console.log("DM support enabled: DirectMessages intent + Channel partial");
   client.user.setPresence({
     activities: [{ name: "jus chillin, ping me if u need sum", type: 0 }],
     status: "idle",
@@ -53,7 +49,7 @@ client.on("interactionCreate", async (interaction) => {
   try {
     await handleSlashCommand(interaction);
   } catch (error) {
-    const errId = logError(error);
+    const errId = await logError(error);
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp(`bro idk what just happened. Error ID: \`${errId}\``);
     } else {
@@ -96,28 +92,6 @@ client.on("messageCreate", async (message) => {
   const userMessage = stripBotMention(message.content, client.user.id);
   if (!userMessage) return message.reply("yeah?");
 
-  if (isDevModeTrigger(userMessage)) {
-    try {
-      await setDevMode(chatContext, true);
-      return message.reply(
-        "dev mode on for this chat only. using `llama-3.3-70b-versatile` now",
-      );
-    } catch (error) {
-      const errId = logError(error);
-      return message.reply(`bro idk what just happened. Error ID: \`${errId}\``);
-    }
-  }
-
-  if (isDisableDevModeTrigger(userMessage)) {
-    try {
-      await setDevMode(chatContext, false);
-      return message.reply("aight dev mode off for this chat");
-    } catch (error) {
-      const errId = logError(error);
-      return message.reply(`bro idk what just happened. Error ID: \`${errId}\``);
-    }
-  }
-
   try {
     await message.channel.sendTyping().catch(() => null);
 
@@ -127,15 +101,49 @@ client.on("messageCreate", async (message) => {
       message.author.username;
 
     const response = await getResponse(chatContext, userName, userMessage);
-    await message.reply(response.reply);
+    await sendChunkedReply(message, response.reply);
   } catch (error) {
-    const errId = logError(error);
+    const errId = await logError(error);
     await message.reply(`bro idk what just happened. Error ID: \`${errId}\``);
   }
 });
 
+async function sendChunkedReply(message, text) {
+  const maxLen = 2000;
+  if (text.length <= maxLen) {
+    await message.reply(text);
+    return;
+  }
+
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLen) {
+      chunks.push(remaining);
+      break;
+    }
+
+    let splitAt = remaining.lastIndexOf("\n", maxLen);
+    if (splitAt < maxLen * 0.5) {
+      splitAt = remaining.lastIndexOf(" ", maxLen);
+    }
+    if (splitAt < maxLen * 0.5) {
+      splitAt = maxLen;
+    }
+
+    chunks.push(remaining.slice(0, splitAt));
+    remaining = remaining.slice(splitAt).trim();
+  }
+
+  await message.reply(chunks[0]);
+  for (let i = 1; i < chunks.length; i++) {
+    await message.channel.send(chunks[i]);
+  }
+}
+
 async function startBot() {
   await connectDB();
+  await loadSystemPrompt();
   await client.login(process.env.DISCORD_TOKEN);
 }
 
