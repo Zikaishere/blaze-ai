@@ -6,6 +6,7 @@ export interface EnvConfig {
   defaultPrefix: string;
   defaultModel: string;
   maxHistory: number;
+  contextWindow: number;
   defaultCooldownMs: number;
   guildId?: string;
   nodeEnv: "development" | "production";

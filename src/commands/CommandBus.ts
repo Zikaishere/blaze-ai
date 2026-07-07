@@ -6,6 +6,7 @@ import { ConfigCommand } from "./config/ConfigCommand.js";
 import { OwnerCommand } from "./owner/OwnerCommand.js";
 import { MemoryCommand } from "./memory/MemoryCommand.js";
 import { ProfileCommand } from "./profile/ProfileCommand.js";
+import { PingCommand } from "./ping/PingCommand.js";
 import { handleStatsPrefix, handleStatsSlash } from "../telemetry/commands.js";
 
 const commands: Map<string, ICommand> = new Map();
@@ -25,6 +26,7 @@ register(new ConfigCommand());
 register(new OwnerCommand());
 register(new MemoryCommand());
 register(new ProfileCommand());
+register(new PingCommand());
 
 export function getAllCommands(): Map<string, ICommand> {
   return new Map(commands);

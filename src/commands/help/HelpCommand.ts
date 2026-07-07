@@ -1,4 +1,4 @@
-import { EmbedBuilder, PermissionFlagsBits } from "discord.js";
+import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { BaseCommand } from "../base/BaseCommand.js";
 import type { CommandContext, ICommand } from "../types.js";
 import type { BaseAbility } from "../../abilities/BaseAbility.js";
@@ -10,6 +10,10 @@ import { getRegisteredAbilities } from "../../abilities/AbilityRegistry.js";
 export class HelpCommand extends BaseCommand {
   name = "help";
   description = "Shows Charlie command information";
+
+  slashCommand = new SlashCommandBuilder()
+    .setName("help")
+    .setDescription("Shows Charlie command information");
 
   async run(ctx: CommandContext) {
     const prefix = ctx.type === "slash" ? "/" : await getPrefix(ctx.guildId);

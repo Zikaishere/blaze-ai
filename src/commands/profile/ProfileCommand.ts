@@ -1,4 +1,4 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
 import { BaseCommand } from "../base/BaseCommand.js";
 import type { CommandContext } from "../types.js";
 import { getProfile } from "../../user-profiles/ProfileEngine.js";
@@ -8,11 +8,32 @@ export class ProfileCommand extends BaseCommand {
   description = "View your user profile";
   aliases = ["me"];
 
-  async run(ctx: CommandContext): Promise<string | { embeds: any[] } | null> {
-    const targetId = ctx.message.mentions?.users?.first()?.id || ctx.userId;
-    const profile = await getProfile(targetId);
-    const tag = ctx.message.mentions?.users?.first()?.tag || "You";
+  slashCommand = new SlashCommandBuilder()
+    .setName("profile")
+    .setDescription("View your user profile")
+    .addUserOption((opt) =>
+      opt.setName("target").setDescription("User to look up").setRequired(false),
+    );
 
+  async run(ctx: CommandContext): Promise<string | { embeds: any[] } | null> {
+    let targetId = ctx.userId;
+    let tag = "You";
+
+    if (ctx.type === "slash" && ctx.interaction) {
+      const target = ctx.interaction.options.getUser("target");
+      if (target) {
+        targetId = target.id;
+        tag = target.tag;
+      }
+    } else if (ctx.message?.mentions?.users) {
+      const first = ctx.message.mentions.users.first();
+      if (first) {
+        targetId = first.id;
+        tag = first.tag;
+      }
+    }
+
+    const profile = await getProfile(targetId);
     if (!profile) return `${tag} dont have a profile yet — start chatting first`;
 
     const embed = new EmbedBuilder()

@@ -76,11 +76,13 @@ export async function handleConversation(message: Message): Promise<boolean> {
       .getRelevant("guild", context.guildId || "global", 5)
       .catch(() => []);
 
-    const [history, userProfile, serverDNA] = await Promise.all([
+    const [fullHistory, userProfile, serverDNA] = await Promise.all([
       getChatHistory(context.chatKey),
       config.memoryEnabled ? getProfile(context.userId) : null,
       getServerDNAData(context.guildId),
     ]);
+
+    const history = fullHistory.slice(-env.contextWindow);
 
     const userName =
       message.member?.displayName ||

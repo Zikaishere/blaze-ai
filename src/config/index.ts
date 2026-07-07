@@ -28,6 +28,7 @@ export const env: EnvConfig = {
   defaultPrefix: optionalEnv("DEFAULT_PREFIX", "b."),
   defaultModel: optionalEnv("DEFAULT_MODEL", "llama-3.3-70b-versatile"),
   maxHistory: parseInt(optionalEnv("MAX_HISTORY", "50"), 10),
+  contextWindow: parseInt(optionalEnv("CONTEXT_WINDOW", "10"), 10),
   defaultCooldownMs: parseInt(optionalEnv("COOLDOWN_MS", "3000"), 10),
   guildId: process.env.GUILD_ID,
   nodeEnv: (process.env.NODE_ENV as EnvConfig["nodeEnv"]) || "development",
