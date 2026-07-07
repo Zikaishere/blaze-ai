@@ -1,8 +1,10 @@
 import UserProfile from "./models/UserProfile.js";
-import { extractFacts, stripPII } from "./FactExtractor.js";
+import { extractFacts, stripPII, canExtract } from "./FactExtractor.js";
 import { updateTopicCounts, getTopInterests } from "./InterestTracker.js";
+import { isDuplicate } from "./stringUtils.js";
 
-const EXTRACTION_INTERVAL = 5;
+const EXTRACTION_INTERVAL = 15;
+const MAX_FACTS = 25;
 
 export async function getProfile(userId: string): Promise<{
   profile: string;
@@ -38,7 +40,9 @@ export async function updateProfile(
     doc.topicCounts = updateTopicCounts(doc.topicCounts || new Map(), userMessage);
 
     const shouldExtract =
-      doc.messageCount % EXTRACTION_INTERVAL === 0 || userMessage.length >= 30;
+      doc.messageCount % EXTRACTION_INTERVAL === 0 &&
+      userMessage.length >= 100 &&
+      canExtract(userId);
 
     if (shouldExtract) {
       const result = await extractFacts(
@@ -59,15 +63,14 @@ export async function updateProfile(
       }
 
       if (result.newFacts.length > 0) {
-        const existing = new Set(
-          doc.facts.map((f) => f.toLowerCase().replace(/\s+/g, " ")),
-        );
         for (const fact of result.newFacts) {
-          const key = fact.toLowerCase().replace(/\s+/g, " ");
-          if (!existing.has(key)) {
+          if (!isDuplicate(fact, doc.facts)) {
             doc.facts.push(fact);
-            existing.add(key);
           }
+        }
+
+        if (doc.facts.length > MAX_FACTS) {
+          doc.facts = doc.facts.slice(doc.facts.length - MAX_FACTS);
         }
       }
 

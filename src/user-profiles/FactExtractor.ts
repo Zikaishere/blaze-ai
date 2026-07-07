@@ -36,6 +36,16 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 2): Promise<T
   throw new Error("retry failed");
 }
 
+const extractionCooldowns = new Map<string, number>();
+const MIN_COOLDOWN_MS = 120_000;
+
+export function canExtract(userId: string): boolean {
+  const last = extractionCooldowns.get(userId);
+  if (last && Date.now() - last < MIN_COOLDOWN_MS) return false;
+  extractionCooldowns.set(userId, Date.now());
+  return true;
+}
+
 export async function extractFacts(
   userName: string,
   userMessage: string,
@@ -67,8 +77,9 @@ Read the recent conversation and output a JSON update:
 
 Rules:
 - Update the profile with anything new you learn. Keep it current — if something changed, reflect it.
-- newFacts: only truly useful facts that would help future conversations. NOT ephemeral chat content.
-- obsoleteFactIndices: which existing facts (0-indexed) are now outdated or contradicted. Remove them.
+- newFacts: only genuinely useful facts that would help future conversations. Max 3 facts per extraction.
+- If a new fact is very similar to an existing fact, output the existing fact's index in obsoleteFactIndices so it gets replaced instead of duplicated.
+- obsoleteFactIndices: which existing facts (0-indexed) are now outdated, contradicted, or being replaced by a new fact.
 - NEVER save addresses, phone numbers, emails, full names, or other personal contact info.
 - NEVER save anything that would be creepy or invasive if the user heard it repeated back.
 - If nothing changed, output {"profile": "same", "newFacts": [], "obsoleteFactIndices": []}
@@ -97,7 +108,7 @@ Rules:
 
     return {
       profile: parsed.profile && parsed.profile !== "same" ? stripPII(parsed.profile) : null,
-      newFacts: Array.isArray(parsed.newFacts) ? parsed.newFacts.map((f: string) => stripPII(f)).filter((f: string) => f.length >= 5) : [],
+      newFacts: Array.isArray(parsed.newFacts) ? parsed.newFacts.map((f: string) => stripPII(f)).filter((f: string) => f.length >= 10) : [],
       obsoleteFactIndices: Array.isArray(parsed.obsoleteFactIndices) ? parsed.obsoleteFactIndices : [],
     };
   } catch (error) {
