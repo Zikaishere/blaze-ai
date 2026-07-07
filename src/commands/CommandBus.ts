@@ -1,0 +1,108 @@
+import type { Message, ChatInputCommandInteraction } from "discord.js";
+import type { ICommand, CommandContext } from "./types";
+import { getPrefix } from "../services/ConfigService";
+import { HelpCommand } from "./help/HelpCommand";
+import { ConfigCommand } from "./config/ConfigCommand";
+import { ModerationCommand } from "./moderation/ModerationCommand";
+import { OwnerCommand } from "./owner/OwnerCommand";
+import { MemoryCommand } from "./memory/MemoryCommand";
+import { handleStatsPrefix, handleStatsSlash } from "../telemetry/commands";
+
+const commands: Map<string, ICommand> = new Map();
+const aliases: Map<string, string> = new Map();
+
+function register(cmd: ICommand): void {
+  commands.set(cmd.name, cmd);
+  if (cmd.aliases) {
+    for (const alias of cmd.aliases) {
+      aliases.set(alias, cmd.name);
+    }
+  }
+}
+
+register(new HelpCommand());
+register(new ConfigCommand());
+register(new ModerationCommand());
+register(new OwnerCommand());
+register(new MemoryCommand());
+
+export function getSlashCommands() {
+  return Array.from(commands.values())
+    .filter((c) => c.slashCommand)
+    .map((c) => c.slashCommand);
+}
+
+export async function handlePrefix(message: Message): Promise<void> {
+  const prefix = await getPrefix(message.guildId);
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const commandName = (args.shift() || "").toLowerCase();
+  const resolved = commands.get(commandName) || commands.get(aliases.get(commandName) || "");
+
+  if (resolved) {
+    const ctx: CommandContext = {
+      type: "prefix",
+      name: resolved.name,
+      args,
+      userId: message.author.id,
+      guildId: message.guildId,
+      channelId: message.channelId,
+      message,
+    };
+    await resolved.execute(ctx);
+    return;
+  }
+
+  if (commandName === "stats") {
+    await handleStatsPrefix(message, args);
+  }
+}
+
+export async function handleSlash(interaction: ChatInputCommandInteraction): Promise<void> {
+  const commandName = interaction.commandName;
+  const resolved = commands.get(commandName);
+
+  if (resolved) {
+    const ctx: CommandContext = {
+      type: "slash",
+      name: resolved.name,
+      args: [],
+      userId: interaction.user.id,
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      message: null as any,
+      interaction,
+    };
+    await resolved.execute(ctx);
+    return;
+  }
+
+  if (commandName === "stats") {
+    await handleStatsSlash(interaction);
+  }
+}
+
+export async function handleMention(message: Message, text: string): Promise<boolean> {
+  const trimmed = text.trim();
+  const parts = trimmed.split(/ +/).filter(Boolean);
+  const commandName = parts[0]?.toLowerCase();
+  if (!commandName) return false;
+
+  const resolved = commands.get(commandName) || commands.get(aliases.get(commandName) || "");
+  if (!resolved) return false;
+
+  const mentionCommands = new Set(["warn", "kick", "ban", "unban", "history", "baninfo", "banlist"]);
+  if (!mentionCommands.has(commandName)) return false;
+
+  const ctx: CommandContext = {
+    type: "mention",
+    name: resolved.name,
+    args: parts.slice(1),
+    userId: message.author.id,
+    guildId: message.guildId,
+    channelId: message.channelId,
+    message,
+  };
+
+  await resolved.execute(ctx);
+  return true;
+}

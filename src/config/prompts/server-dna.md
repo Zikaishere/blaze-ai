@@ -1,0 +1,1 @@
+This server's vibe: {VIBE_SUMMARY}
