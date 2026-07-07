@@ -51,23 +51,26 @@ export async function handleConversation(message: Message): Promise<boolean> {
 
   Object.assign(config, overrides);
 
-  let typingInterval: ReturnType<typeof setInterval> | null = null;
+  const typingInterval = setInterval(
+    () => (message.channel as any).sendTyping().catch(() => {}),
+    8000,
+  );
+
+  async function reply(text: string) {
+    clearInterval(typingInterval);
+    await message.reply(text);
+  }
 
   try {
     const abilityResult = await tryAbilities(userMessage, context.guildId);
     if (abilityResult) {
       await addToChatHistory(context, "user", userMessage);
       await addToChatHistory(context, "assistant", abilityResult);
-      await message.reply(abilityResult);
+      await reply(abilityResult);
       return true;
     }
 
     await addToChatHistory(context, "user", userMessage);
-
-    typingInterval = setInterval(
-      () => (message.channel as any).sendTyping().catch(() => {}),
-      8000,
-    );
 
     const guildMemories = await memoryManager
       .getRelevant("guild", context.guildId || "global", 5)
@@ -108,16 +111,15 @@ export async function handleConversation(message: Message): Promise<boolean> {
       temperature: config.temperature,
     });
 
-    if (typingInterval) clearInterval(typingInterval);
     await addToChatHistory(context, "assistant", response.content);
-    await message.reply(response.content);
+    await reply(response.content);
 
     if (config.memoryEnabled) {
       updateProfile(context.userId, userName, userMessage, history);
     }
     return true;
   } catch (error) {
-    if (typingInterval) clearInterval(typingInterval);
+    clearInterval(typingInterval);
     console.error("Conversation handler error:", error);
     await message.reply("bro idk what just happened");
     return true;
