@@ -1,5 +1,3 @@
-# user-profile.md
-
 # User Profile
 
 Each user has a persistent profile that helps Charlie build familiarity over time.

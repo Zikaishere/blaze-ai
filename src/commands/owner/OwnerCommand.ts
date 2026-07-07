@@ -11,12 +11,32 @@ export class OwnerCommand extends BaseCommand {
   ownerOnly = true;
 
   slashCommand = new SlashCommandBuilder()
-    .setName("error")
-    .setDescription("Look up an error ID")
-    .addStringOption((option) => option.setName("id").setDescription("Error ID").setRequired(true));
+    .setName("owner")
+    .setDescription("Owner-only commands")
+    .addSubcommand((sub) =>
+      sub
+        .setName("error")
+        .setDescription("Look up an error ID")
+        .addStringOption((option) => option.setName("id").setDescription("Error ID").setRequired(true)),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("addprompt")
+        .setDescription("Append to global system prompt")
+        .addStringOption((option) => option.setName("text").setDescription("Prompt text").setRequired(true)),
+    )
+    .addSubcommand((sub) =>
+      sub.setName("cleardb").setDescription("Wipe all history & memories"),
+    );
 
   async run(ctx: CommandContext) {
-    const cmd = ctx.name === "owner" ? ctx.args[0]?.toLowerCase() || "" : ctx.name;
+    let cmd: string;
+
+    if (ctx.type === "slash" && ctx.interaction) {
+      cmd = ctx.interaction.options.getSubcommand();
+    } else {
+      cmd = ctx.name === "owner" ? ctx.args[0]?.toLowerCase() || "" : ctx.name;
+    }
 
     if (cmd === "error") return this.lookupError(ctx);
     if (cmd === "addprompt") return this.addPrompt(ctx);

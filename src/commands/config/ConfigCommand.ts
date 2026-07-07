@@ -71,6 +71,67 @@ export class ConfigCommand extends BaseCommand {
               { name: "Off", value: "off" },
             ),
         ),
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("prompt")
+        .setDescription("Add a server prompt addition (admin only)")
+        .addStringOption((opt) => opt.setName("text").setDescription("Prompt text").setRequired(true)),
+    )
+    .addSubcommandGroup((group) =>
+      group
+        .setName("fact")
+        .setDescription("Manage custom facts about yourself")
+        .addSubcommand((sub) =>
+          sub
+            .setName("add")
+            .setDescription("Save a fact about yourself")
+            .addStringOption((opt) => opt.setName("text").setDescription("Fact text").setRequired(true)),
+        )
+        .addSubcommand((sub) =>
+          sub.setName("list").setDescription("List your saved facts"),
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName("remove")
+            .setDescription("Remove a fact by number")
+            .addIntegerOption((opt) => opt.setName("index").setDescription("Fact number").setRequired(true).setMinValue(1)),
+        ),
+    )
+    .addSubcommandGroup((group) =>
+      group
+        .setName("dna")
+        .setDescription("Server DNA management (admin)")
+        .addSubcommand((sub) =>
+          sub.setName("view").setDescription("View server DNA"),
+        )
+        .addSubcommand((sub) =>
+          sub.setName("reset").setDescription("Reset server DNA"),
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName("set")
+            .setDescription("Set a DNA trait value")
+            .addStringOption((opt) => opt.setName("trait").setDescription("Trait name").setRequired(true))
+            .addNumberOption((opt) => opt.setName("value").setDescription("Value (0-1)").setRequired(true).setMinValue(0).setMaxValue(1)),
+        ),
+    )
+    .addSubcommandGroup((group) =>
+      group
+        .setName("profile")
+        .setDescription("User profile management")
+        .addSubcommand((sub) =>
+          sub
+            .setName("view")
+            .setDescription("View a user's profile")
+            .addUserOption((opt) => opt.setName("target").setDescription("User to look up").setRequired(false)),
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName("reset")
+            .setDescription("Reset a user's profile (admin)")
+            .addUserOption((opt) => opt.setName("target").setDescription("User to reset").setRequired(false)),
+        ),
     ) as any;
 
   async run(ctx: CommandContext) {
@@ -283,9 +344,12 @@ export class ConfigCommand extends BaseCommand {
 
   private async handleSlash(ctx: CommandContext) {
     const interaction = ctx.interaction!;
+    const group = interaction.options.getSubcommandGroup(false);
     const sub = interaction.options.getSubcommand();
     const value = interaction.options.getString("value");
+    const text = interaction.options.getString("text");
     const isAdmin = ctx.userId === env.ownerId || (interaction.member as any)?.permissions?.has(PermissionFlagsBits.Administrator);
+    const isOwner = ctx.userId === env.ownerId;
 
     if (sub === "view") {
       return this.buildViewEmbed(ctx);
@@ -299,7 +363,7 @@ export class ConfigCommand extends BaseCommand {
     }
 
     if (sub === "model") {
-      if (ctx.userId !== env.ownerId || !ctx.guildId) return "only the bot owner can change the model";
+      if (!isOwner || !ctx.guildId) return "only the bot owner can change the model";
       if (!value) return "provide a model name";
       await updateGuildConfig(ctx.guildId, { aiModel: value });
       return `model for this server set to \`${value}\``;
@@ -317,6 +381,95 @@ export class ConfigCommand extends BaseCommand {
       const enabled = value !== "off";
       await updateUserConfig(ctx.userId, { memoryEnabled: enabled });
       return `memory is now ${enabled ? "on" : "off"} for you`;
+    }
+
+    if (sub === "prompt") {
+      if (!isAdmin || !ctx.guildId) return "only server admins can add prompt additions";
+      if (!text) return "provide prompt text";
+      await addGuildPrompt(ctx.guildId, text);
+      return "added server prompt addition";
+    }
+
+    if (group === "fact") {
+      if (sub === "add") {
+        if (!text) return "provide the fact text";
+        await addCustomFact(ctx.userId, text);
+        return `saved: "${text}"`;
+      }
+      if (sub === "list") {
+        const userCfg = await getUserConfig(ctx.userId);
+        if (!userCfg.customFacts.length) return "you haven't saved any facts yet";
+        const lines = userCfg.customFacts.map((f, i) => `${i + 1}. ${f}`).join("\n");
+        return `**Your saved facts:**\n${lines}`;
+      }
+      if (sub === "remove") {
+        const idx = interaction.options.getInteger("index", true);
+        const userCfg = await getUserConfig(ctx.userId);
+        if (idx < 1 || idx > userCfg.customFacts.length) return "invalid fact number";
+        const removed = userCfg.customFacts[idx - 1];
+        await removeCustomFact(ctx.userId, idx - 1);
+        return `removed: "${removed}"`;
+      }
+    }
+
+    if (group === "dna") {
+      if (!isAdmin || !ctx.guildId) return "nah";
+
+      if (sub === "view") {
+        const dna = await (await import("../../dna/observer")).getDNA(ctx.guildId);
+        if (!dna || !dna.isReady) return "dna still forming — need at least 25 messages first";
+        const { EmbedBuilder } = await import("discord.js");
+        const embed = new EmbedBuilder()
+          .setColor(0xff6a00)
+          .setTitle("Server DNA")
+          .addFields(
+            { name: "Pacing", value: `${(dna.traits.pacing * 100).toFixed(0)}%`, inline: true },
+            { name: "Formality", value: `${(dna.traits.formality * 100).toFixed(0)}%`, inline: true },
+            { name: "Humor", value: `${(dna.traits.humorLevel * 100).toFixed(0)}%`, inline: true },
+            { name: "Emoji Use", value: `${(dna.traits.emojiFrequency * 100).toFixed(0)}%`, inline: true },
+            { name: "Messages Observed", value: `${dna.messageCount}`, inline: true },
+            { name: "Status", value: dna.isReady ? "Ready" : "Forming...", inline: true },
+          );
+        return { embeds: [embed] };
+      }
+
+      if (sub === "reset") {
+        await (await import("../../dna/observer")).resetDNA(ctx.guildId);
+        return "dna reset";
+      }
+
+      if (sub === "set") {
+        const trait = interaction.options.getString("trait", true);
+        const val = interaction.options.getNumber("value", true);
+        await (await import("../../dna/observer")).updateDNA(ctx.guildId, { [`traits.${trait}`]: val });
+        return `set \`${trait}\` to ${(val * 100).toFixed(0)}%`;
+      }
+    }
+
+    if (group === "profile") {
+      if (sub === "view") {
+        const target = interaction.options.getUser("target");
+        const targetId = target?.id || ctx.userId;
+        const tag = target?.tag || "You";
+        const profile = await (await import("../../user-profiles/ProfileEngine")).getProfile(targetId);
+        if (!profile) return `${tag} dont have a profile yet — start chatting first`;
+        const { EmbedBuilder } = await import("discord.js");
+        const embed = new EmbedBuilder()
+          .setColor(0xff6a00)
+          .setTitle(`${tag}'s Profile`)
+          .setDescription(profile.profile || "No profile summary yet")
+          .addFields(
+            { name: "Facts", value: profile.facts.length ? profile.facts.map((f, i) => `${i + 1}. ${f}`).join("\n").slice(0, 1024) : "None yet", inline: false },
+            { name: "Interests", value: profile.interests.length ? profile.interests.join(", ") : "Still forming", inline: false },
+          );
+        return { embeds: [embed] };
+      }
+
+      if (sub === "reset" && isAdmin) {
+        const target = interaction.options.getUser("target");
+        await (await import("../../user-profiles/ProfileEngine")).resetProfile(target?.id || ctx.userId);
+        return "profile reset";
+      }
     }
 
     return "unknown subcommand";

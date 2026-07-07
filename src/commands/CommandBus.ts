@@ -87,6 +87,8 @@ export async function handleSlash(interaction: ChatInputCommandInteraction): Pro
   }
 }
 
+// Was used for @mention moderation commands before moderation was removed.
+// Always returns false — mention commands no longer supported.
 export async function handleMention(_message: Message, _text: string): Promise<boolean> {
   return false;
 }
