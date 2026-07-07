@@ -1,8 +1,8 @@
 import type { Message } from "discord.js";
 import { getPrefix } from "../../services/ConfigService.js";
-import { isBotConversationMessage, stripBotMention } from "../../utils/messageRouting.js";
+import { isBotConversationMessage } from "../../utils/messageRouting.js";
 import { handleConversation } from "../../conversation/ConversationHandler.js";
-import { handlePrefix, handleMention } from "../../commands/CommandBus.js";
+import { handlePrefix } from "../../commands/CommandBus.js";
 import { observe } from "../../dna/observer.js";
 import * as telemetry from "../../telemetry/recorder.js";
 
@@ -35,14 +35,6 @@ export async function handleMessage(message: Message): Promise<void> {
 
     const routing = isBotConversationMessage(message, message.client.user!.id);
     if (!routing.shouldHandle) return;
-
-    const mentionText = stripBotMention(message.content, message.client.user!.id);
-
-    const handled = await handleMention(message, mentionText);
-    if (handled) {
-      telemetry.recordCommand("mention");
-      return;
-    }
 
     telemetry.recordMessage();
 
