@@ -26,4 +26,11 @@ export function buildVibeSummary(dna: any): string | null {
   return dnaEngine.getVibeSummary(dna);
 }
 
+export async function updateDNA(
+  guildId: string,
+  overrides: Record<string, number>,
+): Promise<void> {
+  await dnaEngine.updateDNA(guildId, overrides);
+}
+
 export { MIN_CONFIDENCE };

@@ -259,6 +259,22 @@ class DNAEngine {
     await ServerDNA.deleteOne({ guildId });
   }
 
+  async updateDNA(guildId: string, overrides: Record<string, number>): Promise<void> {
+    const update: Record<string, number> = {};
+    for (const [key, val] of Object.entries(overrides)) {
+      if (key.startsWith("traits.")) {
+        update[key] = Math.max(0, Math.min(1, val));
+      }
+    }
+    if (Object.keys(update).length > 0) {
+      await ServerDNA.findOneAndUpdate(
+        { guildId },
+        { $set: { ...update, isReady: true, messageCount: Math.max(25, await this.getDNA(guildId).then(d => d?.messageCount || 0)) } },
+        { upsert: true },
+      );
+    }
+  }
+
   getVibeSummary(dna: { traits: IServerDNATraits; topSlang?: string[] } | null): string | null {
     if (!dna || !dna.traits) return null;
     const t = dna.traits;

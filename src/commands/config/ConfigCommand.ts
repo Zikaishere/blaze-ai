@@ -121,9 +121,10 @@ export class ConfigCommand extends BaseCommand {
       return this.handleFact(ctx);
     }
 
-    if (sub === "dna" && isAdmin && ctx.guildId) {
+    if (sub === "dna" && ctx.guildId) {
+      if (!isAdmin) return "nah";
       const action = (ctx.args[1] || "").toLowerCase();
-      const { getDNA, resetDNA } = await import("../../dna/observer");
+      const { getDNA, resetDNA, updateDNA } = await import("../../dna/observer");
 
       if (action === "view" || !ctx.args[1]) {
         const dna = await getDNA(ctx.guildId);
@@ -135,9 +136,11 @@ export class ConfigCommand extends BaseCommand {
           .setColor(0xff6a00)
           .setTitle("Server DNA")
           .addFields(
+            { name: "Pacing", value: `${(dna.traits.pacing * 100).toFixed(0)}%`, inline: true },
             { name: "Formality", value: `${(dna.traits.formality * 100).toFixed(0)}%`, inline: true },
             { name: "Humor", value: `${(dna.traits.humorLevel * 100).toFixed(0)}%`, inline: true },
             { name: "Emoji Use", value: `${(dna.traits.emojiFrequency * 100).toFixed(0)}%`, inline: true },
+            { name: "Slang Usage", value: `${(dna.traits.slangUsage * 100).toFixed(0)}%`, inline: true },
             { name: "Message Length", value: `${(dna.traits.responseLength * 100).toFixed(0)}%`, inline: true },
             { name: "Messages Observed", value: `${dna.messageCount}`, inline: true },
             { name: "Status", value: dna.isReady ? "Ready" : "Forming...", inline: true },
@@ -153,7 +156,45 @@ export class ConfigCommand extends BaseCommand {
         return "dna reset. i'll start observing from scratch.";
       }
 
-      return "usage: `b.config dna view` or `b.config dna reset`";
+      if (action === "set" && ctx.args[2] && ctx.args[3] && isAdmin) {
+        const trait = ctx.args[2];
+        const val = parseFloat(ctx.args[3]);
+        if (isNaN(val) || val < 0 || val > 1) return "value must be between 0 and 1";
+        await updateDNA(ctx.guildId, { [`traits.${trait}`]: val });
+        return `set \`${trait}\` to ${(val * 100).toFixed(0)}%`;
+      }
+
+      return "usage: `b.config dna view`, `b.config dna reset`, or `b.config dna set <trait> <0-1>`";
+    }
+
+    if (sub === "profile") {
+      const action = (ctx.args[1] || "").toLowerCase();
+      const { getProfile, resetProfile } = await import("../../user-profiles/ProfileEngine");
+      const { EmbedBuilder } = await import("discord.js");
+
+      if (action === "view" || !ctx.args[1]) {
+        const targetId = ctx.message.mentions?.users?.first()?.id || ctx.userId;
+        const profile = await getProfile(targetId);
+        const tag = ctx.message.mentions?.users?.first()?.tag || "You";
+        if (!profile) return `${tag} dont have a profile yet — start chatting first`;
+        const embed = new EmbedBuilder()
+          .setColor(0xff6a00)
+          .setTitle(`${tag}'s Profile`)
+          .setDescription(profile.profile || "No profile summary yet")
+          .addFields(
+            { name: "Facts", value: profile.facts.length ? profile.facts.map((f, i) => `${i + 1}. ${f}`).join("\n").slice(0, 1024) : "None yet", inline: false },
+            { name: "Interests", value: profile.interests.length ? profile.interests.join(", ") : "Still forming", inline: false },
+          );
+        return { embeds: [embed] };
+      }
+
+      if (action === "reset" && isAdmin) {
+        const targetId = ctx.message.mentions?.users?.first()?.id || ctx.userId;
+        await resetProfile(targetId);
+        return "profile reset";
+      }
+
+      return "usage: `b.config profile view [@user]` or `b.config profile reset [@user]` (admin)";
     }
 
     if (sub === "view" || sub === "") {
@@ -161,11 +202,11 @@ export class ConfigCommand extends BaseCommand {
     }
 
     if (isAdmin) {
-      const valid = ["prefix", "model", "style", "memory", "prompt", "dna", "fact"];
+      const valid = ["prefix", "model", "style", "memory", "prompt", "dna", "profile", "fact"];
       return `usage: \`${p}config <${valid.join("|")}> <value>\``;
     }
 
-    return `usage: \`${p}config view\`, \`${p}config style <style>\`, \`${p}config memory on/off\`, or \`${p}config fact add <text>\``;
+    return `usage: \`${p}config view\`, \`${p}config style <style>\`, \`${p}config memory on/off\`, \`${p}profile\`, or \`${p}config fact add <text>\``;
   }
 
   private async handleFact(ctx: CommandContext) {

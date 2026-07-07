@@ -6,6 +6,7 @@ import { ConfigCommand } from "./config/ConfigCommand.js";
 import { ModerationCommand } from "./moderation/ModerationCommand.js";
 import { OwnerCommand } from "./owner/OwnerCommand.js";
 import { MemoryCommand } from "./memory/MemoryCommand.js";
+import { ProfileCommand } from "./profile/ProfileCommand.js";
 import { handleStatsPrefix, handleStatsSlash } from "../telemetry/commands.js";
 
 const commands: Map<string, ICommand> = new Map();
@@ -25,6 +26,7 @@ register(new ConfigCommand());
 register(new ModerationCommand());
 register(new OwnerCommand());
 register(new MemoryCommand());
+register(new ProfileCommand());
 
 export function getSlashCommands() {
   return Array.from(commands.values())

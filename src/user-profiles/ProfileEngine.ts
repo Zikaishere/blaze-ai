@@ -80,3 +80,7 @@ export async function updateProfile(
     console.error("Profile update failed:", error);
   }
 }
+
+export async function resetProfile(userId: string): Promise<void> {
+  await UserProfile.deleteOne({ userId });
+}
