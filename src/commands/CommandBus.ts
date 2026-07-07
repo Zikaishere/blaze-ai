@@ -3,7 +3,6 @@ import type { ICommand, CommandContext } from "./types.js";
 import { getPrefix } from "../services/ConfigService.js";
 import { HelpCommand } from "./help/HelpCommand.js";
 import { ConfigCommand } from "./config/ConfigCommand.js";
-import { ModerationCommand } from "./moderation/ModerationCommand.js";
 import { OwnerCommand } from "./owner/OwnerCommand.js";
 import { MemoryCommand } from "./memory/MemoryCommand.js";
 import { ProfileCommand } from "./profile/ProfileCommand.js";
@@ -23,7 +22,6 @@ function register(cmd: ICommand): void {
 
 register(new HelpCommand());
 register(new ConfigCommand());
-register(new ModerationCommand());
 register(new OwnerCommand());
 register(new MemoryCommand());
 register(new ProfileCommand());
@@ -47,7 +45,7 @@ export async function handlePrefix(message: Message): Promise<void> {
   if (resolved) {
     const ctx: CommandContext = {
       type: "prefix",
-      name: resolved.name,
+      name: commandName,
       args,
       userId: message.author.id,
       guildId: message.guildId,
@@ -70,7 +68,7 @@ export async function handleSlash(interaction: ChatInputCommandInteraction): Pro
   if (resolved) {
     const ctx: CommandContext = {
       type: "slash",
-      name: resolved.name,
+      name: commandName,
       args: [],
       userId: interaction.user.id,
       guildId: interaction.guildId,
@@ -87,28 +85,6 @@ export async function handleSlash(interaction: ChatInputCommandInteraction): Pro
   }
 }
 
-export async function handleMention(message: Message, text: string): Promise<boolean> {
-  const trimmed = text.trim();
-  const parts = trimmed.split(/ +/).filter(Boolean);
-  const commandName = parts[0]?.toLowerCase();
-  if (!commandName) return false;
-
-  const resolved = commands.get(commandName) || commands.get(aliases.get(commandName) || "");
-  if (!resolved) return false;
-
-  const mentionCommands = new Set(["warn", "kick", "ban", "unban", "history", "baninfo", "banlist"]);
-  if (!mentionCommands.has(commandName)) return false;
-
-  const ctx: CommandContext = {
-    type: "mention",
-    name: resolved.name,
-    args: parts.slice(1),
-    userId: message.author.id,
-    guildId: message.guildId,
-    channelId: message.channelId,
-    message,
-  };
-
-  await resolved.execute(ctx);
-  return true;
+export async function handleMention(_message: Message, _text: string): Promise<boolean> {
+  return false;
 }
