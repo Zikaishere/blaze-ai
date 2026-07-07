@@ -39,6 +39,7 @@ export class ModerationCommand extends BaseCommand {
   name = "moderation";
   description = "Moderation commands";
   aliases = ["warn", "kick", "ban", "unban", "history", "baninfo", "banlist"];
+  requiredPermissions = [PermissionFlagsBits.KickMembers, PermissionFlagsBits.BanMembers];
 
   async run(ctx: CommandContext) {
     const cmd = ctx.name === "moderation" ? ctx.args[0]?.toLowerCase() || "" : ctx.name;

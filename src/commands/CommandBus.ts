@@ -28,6 +28,10 @@ register(new OwnerCommand());
 register(new MemoryCommand());
 register(new ProfileCommand());
 
+export function getAllCommands(): Map<string, ICommand> {
+  return new Map(commands);
+}
+
 export function getSlashCommands() {
   return Array.from(commands.values())
     .filter((c) => c.slashCommand)
