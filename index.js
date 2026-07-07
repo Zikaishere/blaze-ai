@@ -20,6 +20,4 @@ if (process.env.AUTO_UPDATE === '1') {
 
 require("dotenv").config();
 
-const { startBot } = require("./src/bot");
-
-startBot();
+execSync('npx tsx src/index.ts', { stdio: 'inherit', env: { ...process.env } });
