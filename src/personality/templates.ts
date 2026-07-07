@@ -5,7 +5,7 @@ const TEMPLATES_DIR = path.resolve(__dirname, "..", "config", "prompts");
 
 const cache = new Map<string, string>();
 
-const REQUIRED_TEMPLATES = ["core-identity", "speech-style", "behavior-rules", "server-dna"];
+const REQUIRED_TEMPLATES = ["core-identity", "speech-style", "behavior-rules", "server-dna", "user-profile"];
 
 export async function loadTemplates(): Promise<void> {
   for (const name of REQUIRED_TEMPLATES) {
