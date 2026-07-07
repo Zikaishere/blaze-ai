@@ -1,6 +1,6 @@
-import { getProvider } from "../ai/factory";
-import { backgroundLimiter } from "../ai/groq/rate-limiters";
-import { env } from "../config";
+import { getProvider } from "../ai/factory.js";
+import { backgroundLimiter } from "../ai/groq/rate-limiters.js";
+import { env } from "../config/index.js";
 
 const PII_PATTERNS = [
   /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g,

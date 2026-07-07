@@ -1,8 +1,8 @@
 import { EmbedBuilder } from "discord.js";
-import { BaseCommand } from "../base/BaseCommand";
-import type { CommandContext } from "../types";
-import { env } from "../../config";
-import { getPrefix } from "../../services/ConfigService";
+import { BaseCommand } from "../base/BaseCommand.js";
+import type { CommandContext } from "../types.js";
+import { env } from "../../config/index.js";
+import { getPrefix } from "../../services/ConfigService.js";
 
 export class HelpCommand extends BaseCommand {
   name = "help";

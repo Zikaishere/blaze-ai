@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits, Partials } from "discord.js";
-import { env } from "../config";
-import * as telemetry from "../telemetry/recorder";
+import { env } from "../config/index.js";
+import * as telemetry from "../telemetry/recorder.js";
 
 export const client = new Client({
   intents: [

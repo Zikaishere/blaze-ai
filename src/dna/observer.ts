@@ -1,6 +1,6 @@
 import type { Message } from "discord.js";
-import { dnaEngine } from "./DNAEngine";
-import { MIN_CONFIDENCE } from "./trait-definitions";
+import { dnaEngine } from "./DNAEngine.js";
+import { MIN_CONFIDENCE } from "./trait-definitions.js";
 
 export function observe(message: Message): void {
   if (message.author.bot) return;

@@ -1,6 +1,6 @@
 import type { Client } from "discord.js";
-import { getSlashCommands } from "../../commands/CommandBus";
-import { env } from "../../config";
+import { getSlashCommands } from "../../commands/CommandBus.js";
+import { env } from "../../config/index.js";
 
 export async function registerSlashCommands(client: Client): Promise<void> {
   try {

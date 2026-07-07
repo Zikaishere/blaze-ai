@@ -1,4 +1,4 @@
-import Memory, { IMemory } from "./models/Memory";
+import Memory, { IMemory } from "./models/Memory.js";
 
 export class MemoryManager {
   async set(

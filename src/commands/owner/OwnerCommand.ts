@@ -1,8 +1,8 @@
 import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
-import { BaseCommand } from "../base/BaseCommand";
-import type { CommandContext } from "../types";
-import { env } from "../../config";
-import { getLoggedError } from "../../services/ErrorService";
+import { BaseCommand } from "../base/BaseCommand.js";
+import type { CommandContext } from "../types.js";
+import { env } from "../../config/index.js";
+import { getLoggedError } from "../../services/ErrorService.js";
 
 export class OwnerCommand extends BaseCommand {
   name = "owner";

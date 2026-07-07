@@ -1,16 +1,16 @@
 import type { Message } from "discord.js";
-import { getEffectiveConfig } from "../services/ConfigService";
-import { addToChatHistory, getChatHistory } from "../services/ConversationService";
-import { getProvider } from "../ai/factory";
-import { engine } from "../personality/PersonalityEngine";
-import { buildContext } from "./ContextBuilder";
-import { checkCooldown, setCooldown } from "./CooldownGuard";
-import { parseFlags } from "./InlineFlagParser";
-import { tryAbilities } from "../abilities/AbilityRegistry";
-import { env } from "../config";
-import { getDNA } from "../dna/observer";
-import { getProfile, updateProfile } from "../user-profiles/ProfileEngine";
-import { memoryManager } from "../memory/MemoryManager";
+import { getEffectiveConfig } from "../services/ConfigService.js";
+import { addToChatHistory, getChatHistory } from "../services/ConversationService.js";
+import { getProvider } from "../ai/factory.js";
+import { engine } from "../personality/PersonalityEngine.js";
+import { buildContext } from "./ContextBuilder.js";
+import { checkCooldown, setCooldown } from "./CooldownGuard.js";
+import { parseFlags } from "./InlineFlagParser.js";
+import { tryAbilities } from "../abilities/AbilityRegistry.js";
+import { env } from "../config/index.js";
+import { getDNA } from "../dna/observer.js";
+import { getProfile, updateProfile } from "../user-profiles/ProfileEngine.js";
+import { memoryManager } from "../memory/MemoryManager.js";
 
 async function getServerDNAData(guildId: string | null) {
   if (!guildId) return null;

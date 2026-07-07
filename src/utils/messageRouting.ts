@@ -1,5 +1,5 @@
 import type { Message } from "discord.js";
-import type { RoutingResult } from "../types";
+import type { RoutingResult } from "../types/index.js";
 
 export function stripBotMention(content: string, botUserId: string): string {
   return content

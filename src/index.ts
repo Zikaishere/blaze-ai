@@ -1,5 +1,5 @@
-import { startApp } from "./app";
-import { client } from "./client/Client";
+import { startApp } from "./app.js";
+import { client } from "./client/Client.js";
 import mongoose from "mongoose";
 
 async function shutdown(signal: string) {

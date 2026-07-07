@@ -1,15 +1,15 @@
-import type { PersonalityLayer } from "../types/personality";
-import type { DnaTrait } from "../types/personality";
-import { getCoreIdentityLayer } from "./layers/CoreIdentity";
-import { getSpeechStyleLayer } from "./layers/SpeechStyle";
-import { getBehaviorRulesLayer } from "./layers/BehaviorRules";
-import { getServerDNALayer } from "./layers/ServerDNALayer";
-import { getUserProfileLayer } from "./layers/UserProfileLayer";
-import { getAbilitiesLayer } from "./layers/AbilitiesLayer";
-import { getRecentContextLayer } from "./layers/RecentContextLayer";
-import { getMemoryLayer } from "./layers/MemoryLayer";
-import { loadTemplates, getLoadedCount } from "./templates";
-import { buildSystemPrompt } from "../ai/PromptBuilder";
+import type { PersonalityLayer } from "../types/personality.js";
+import type { DnaTrait } from "../types/personality.js";
+import { getCoreIdentityLayer } from "./layers/CoreIdentity.js";
+import { getSpeechStyleLayer } from "./layers/SpeechStyle.js";
+import { getBehaviorRulesLayer } from "./layers/BehaviorRules.js";
+import { getServerDNALayer } from "./layers/ServerDNALayer.js";
+import { getUserProfileLayer } from "./layers/UserProfileLayer.js";
+import { getAbilitiesLayer } from "./layers/AbilitiesLayer.js";
+import { getRecentContextLayer } from "./layers/RecentContextLayer.js";
+import { getMemoryLayer } from "./layers/MemoryLayer.js";
+import { loadTemplates, getLoadedCount } from "./templates.js";
+import { buildSystemPrompt } from "../ai/PromptBuilder.js";
 
 export interface PersonalityInput {
   userName: string;

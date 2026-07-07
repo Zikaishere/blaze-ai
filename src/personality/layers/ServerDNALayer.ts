@@ -1,7 +1,7 @@
-import type { PersonalityLayer } from "../../types/personality";
-import type { DnaTrait } from "../../types/personality";
-import { getTemplate, applyTemplate } from "../templates";
-import { dnaEngine } from "../../dna/DNAEngine";
+import type { PersonalityLayer } from "../../types/personality.js";
+import type { DnaTrait } from "../../types/personality.js";
+import { getTemplate, applyTemplate } from "../templates.js";
+import { dnaEngine } from "../../dna/DNAEngine.js";
 
 const MIN_CONFIDENCE = 50;
 

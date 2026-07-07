@@ -1,7 +1,7 @@
 import type { Interaction, ChatInputCommandInteraction } from "discord.js";
-import { handleSlash } from "../../commands/CommandBus";
-import { logError } from "../../services/ErrorService";
-import * as telemetry from "../../telemetry/recorder";
+import { handleSlash } from "../../commands/CommandBus.js";
+import { logError } from "../../services/ErrorService.js";
+import * as telemetry from "../../telemetry/recorder.js";
 
 export async function handleInteraction(interaction: Interaction): Promise<void> {
   if (!interaction.isChatInputCommand()) return;

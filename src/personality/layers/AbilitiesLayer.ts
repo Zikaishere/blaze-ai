@@ -1,4 +1,4 @@
-import type { PersonalityLayer } from "../../types/personality";
+import type { PersonalityLayer } from "../../types/personality.js";
 
 export function getAbilitiesLayer(abilityNames: string[]): PersonalityLayer | null {
   if (abilityNames.length === 0) return null;

@@ -1,5 +1,5 @@
-import type { PersonalityLayer } from "../../types/personality";
-import { getTemplate } from "../templates";
+import type { PersonalityLayer } from "../../types/personality.js";
+import { getTemplate } from "../templates.js";
 
 const FALLBACK = `You are Charlie, an AI created by Meridian Systems. You are part of a Discord server.
 

@@ -1,9 +1,9 @@
-import type { CommandContext, ICommand } from "../types";
-import type { ExecResult } from "../../types";
+import type { CommandContext, ICommand } from "../types.js";
+import type { ExecResult } from "../../types/index.js";
 import type { Message, ChatInputCommandInteraction } from "discord.js";
 import { PermissionFlagsBits } from "discord.js";
-import { env } from "../../config";
-import { logError } from "../../services/ErrorService";
+import { env } from "../../config/index.js";
+import { logError } from "../../services/ErrorService.js";
 
 export abstract class BaseCommand implements ICommand {
   abstract name: string;

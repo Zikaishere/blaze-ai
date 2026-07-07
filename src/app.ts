@@ -1,8 +1,8 @@
-import { connectDB } from "./services/DatabaseService";
-import { register } from "./abilities/AbilityRegistry";
-import { calculatorAbility } from "./abilities/CalculatorAbility";
-import { webSearchAbility } from "./abilities/WebSearchAbility";
-import { engine } from "./personality/PersonalityEngine";
+import { connectDB } from "./services/DatabaseService.js";
+import { register } from "./abilities/AbilityRegistry.js";
+import { calculatorAbility } from "./abilities/CalculatorAbility.js";
+import { webSearchAbility } from "./abilities/WebSearchAbility.js";
+import { engine } from "./personality/PersonalityEngine.js";
 
 register(calculatorAbility);
 register(webSearchAbility);

@@ -1,4 +1,4 @@
-import type { EnvConfig } from "../types/config";
+import type { EnvConfig } from "../types/config.js";
 import dotenv from "dotenv";
 
 dotenv.config();

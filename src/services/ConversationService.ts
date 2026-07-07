@@ -1,6 +1,6 @@
-import ChatHistory from "../models/ChatHistory";
-import type { ChatContext } from "../types";
-import { env } from "../config";
+import ChatHistory from "../models/ChatHistory.js";
+import type { ChatContext } from "../types/index.js";
+import { env } from "../config/index.js";
 
 export async function getChatHistory(chatKey: string) {
   let doc = await ChatHistory.findOne({ chatKey });

@@ -1,5 +1,5 @@
 import type { Message, Interaction, ChatInputCommandInteraction } from "discord.js";
-import type { ExecResult } from "../types";
+import type { ExecResult } from "../types/index.js";
 
 export interface CommandContext {
   type: "prefix" | "slash" | "mention";

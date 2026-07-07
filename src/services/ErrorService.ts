@@ -1,4 +1,4 @@
-import ErrorLog from "../models/ErrorLog";
+import ErrorLog from "../models/ErrorLog.js";
 
 const CACHE = new Map<string, { message: string; stack: string; time: Date }>();
 const MAX_CACHE = 100;

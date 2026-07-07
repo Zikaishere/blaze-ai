@@ -1,6 +1,6 @@
-import UserProfile from "./models/UserProfile";
-import { extractFacts, stripPII } from "./FactExtractor";
-import { updateTopicCounts, getTopInterests } from "./InterestTracker";
+import UserProfile from "./models/UserProfile.js";
+import { extractFacts, stripPII } from "./FactExtractor.js";
+import { updateTopicCounts, getTopInterests } from "./InterestTracker.js";
 
 const EXTRACTION_INTERVAL = 5;
 

@@ -1,6 +1,6 @@
-import { BaseCommand } from "../base/BaseCommand";
-import type { CommandContext } from "../types";
-import { memoryManager } from "../../memory/MemoryManager";
+import { BaseCommand } from "../base/BaseCommand.js";
+import type { CommandContext } from "../types.js";
+import { memoryManager } from "../../memory/MemoryManager.js";
 
 export class MemoryCommand extends BaseCommand {
   name = "memory";

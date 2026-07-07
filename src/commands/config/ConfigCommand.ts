@@ -1,7 +1,7 @@
 import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
-import { BaseCommand } from "../base/BaseCommand";
-import type { CommandContext } from "../types";
-import { env } from "../../config";
+import { BaseCommand } from "../base/BaseCommand.js";
+import type { CommandContext } from "../types.js";
+import { env } from "../../config/index.js";
 import {
   getGuildConfig,
   getUserConfig,
@@ -12,7 +12,7 @@ import {
   addCustomFact,
   removeCustomFact,
   getPrefix,
-} from "../../services/ConfigService";
+} from "../../services/ConfigService.js";
 
 const VALID_STYLES = ["default", "short", "long", "casual", "formal"];
 

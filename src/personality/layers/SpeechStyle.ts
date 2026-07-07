@@ -1,5 +1,5 @@
-import type { PersonalityLayer } from "../../types/personality";
-import { getTemplate } from "../templates";
+import type { PersonalityLayer } from "../../types/personality.js";
+import { getTemplate } from "../templates.js";
 
 const STYLE_MAP: Record<string, string> = {
   short: "\nKeep responses very short and concise.",

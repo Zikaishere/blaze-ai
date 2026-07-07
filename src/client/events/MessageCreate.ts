@@ -1,10 +1,10 @@
 import type { Message } from "discord.js";
-import { getPrefix } from "../../services/ConfigService";
-import { isBotConversationMessage, stripBotMention } from "../../utils/messageRouting";
-import { handleConversation } from "../../conversation/ConversationHandler";
-import { handlePrefix, handleMention } from "../../commands/CommandBus";
-import { observe } from "../../dna/observer";
-import * as telemetry from "../../telemetry/recorder";
+import { getPrefix } from "../../services/ConfigService.js";
+import { isBotConversationMessage, stripBotMention } from "../../utils/messageRouting.js";
+import { handleConversation } from "../../conversation/ConversationHandler.js";
+import { handlePrefix, handleMention } from "../../commands/CommandBus.js";
+import { observe } from "../../dna/observer.js";
+import * as telemetry from "../../telemetry/recorder.js";
 
 export async function handleMessage(message: Message): Promise<void> {
   try {

@@ -1,4 +1,4 @@
-import type { PersonalityLayer } from "../types/personality";
+import type { PersonalityLayer } from "../types/personality.js";
 
 const SYSTEM_TOKEN_BUDGET = 1500;
 const USER_PROFILE_TOKEN_CAP = 400;

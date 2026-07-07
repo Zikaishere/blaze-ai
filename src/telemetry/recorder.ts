@@ -1,4 +1,4 @@
-import Telemetry from "./models/Telemetry";
+import Telemetry from "./models/Telemetry.js";
 
 const counters: {
   messagesProcessed: number;

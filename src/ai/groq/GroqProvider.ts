@@ -1,7 +1,7 @@
 import Groq from "groq-sdk";
-import { env } from "../../config";
-import { chatLimiter } from "./rate-limiters";
-import type { AIProvider, ChatParams, ChatResponse } from "../AIProvider";
+import { env } from "../../config/index.js";
+import { chatLimiter } from "./rate-limiters.js";
+import type { AIProvider, ChatParams, ChatResponse } from "../AIProvider.js";
 
 const groq = new Groq({ apiKey: env.groqApiKey });
 

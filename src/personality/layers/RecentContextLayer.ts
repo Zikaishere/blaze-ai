@@ -1,4 +1,4 @@
-import type { PersonalityLayer } from "../../types/personality";
+import type { PersonalityLayer } from "../../types/personality.js";
 
 export function getRecentContextLayer(
   additions: string[],

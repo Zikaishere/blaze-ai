@@ -1,4 +1,4 @@
-import type { BaseAbility } from "./BaseAbility";
+import type { BaseAbility } from "./BaseAbility.js";
 
 const registry: BaseAbility[] = [];
 

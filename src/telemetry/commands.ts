@@ -1,7 +1,7 @@
 import { AttachmentBuilder } from "discord.js";
 import type { Message, ChatInputCommandInteraction } from "discord.js";
-import { env } from "../config";
-import { render } from "./renderer";
+import { env } from "../config/index.js";
+import { render } from "./renderer.js";
 
 const VALID_TYPES = ["summary", "activity", "commands", "latency", "growth", "errors"];
 

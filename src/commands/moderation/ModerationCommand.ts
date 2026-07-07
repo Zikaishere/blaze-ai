@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
-import { BaseCommand } from "../base/BaseCommand";
-import type { CommandContext } from "../types";
-import { env } from "../../config";
+import { BaseCommand } from "../base/BaseCommand.js";
+import type { CommandContext } from "../types.js";
+import { env } from "../../config/index.js";
 
 async function ensureUserMemory(userId: string) {
   const UserMemory = (await import("../../models/UserMemory")).default;

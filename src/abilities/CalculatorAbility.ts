@@ -1,4 +1,4 @@
-import type { BaseAbility } from "./BaseAbility";
+import type { BaseAbility } from "./BaseAbility.js";
 
 function canHandle(input: string): boolean {
   const mathPattern = /^[\d\s+\-*/().%^]+$/;

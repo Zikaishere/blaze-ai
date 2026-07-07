@@ -1,4 +1,4 @@
-import type { BaseAbility } from "./BaseAbility";
+import type { BaseAbility } from "./BaseAbility.js";
 import { search, SafeSearchType } from "duck-duck-scrape";
 import Bottleneck from "bottleneck";
 

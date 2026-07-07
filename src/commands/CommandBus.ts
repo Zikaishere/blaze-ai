@@ -1,12 +1,12 @@
 import type { Message, ChatInputCommandInteraction } from "discord.js";
-import type { ICommand, CommandContext } from "./types";
-import { getPrefix } from "../services/ConfigService";
-import { HelpCommand } from "./help/HelpCommand";
-import { ConfigCommand } from "./config/ConfigCommand";
-import { ModerationCommand } from "./moderation/ModerationCommand";
-import { OwnerCommand } from "./owner/OwnerCommand";
-import { MemoryCommand } from "./memory/MemoryCommand";
-import { handleStatsPrefix, handleStatsSlash } from "../telemetry/commands";
+import type { ICommand, CommandContext } from "./types.js";
+import { getPrefix } from "../services/ConfigService.js";
+import { HelpCommand } from "./help/HelpCommand.js";
+import { ConfigCommand } from "./config/ConfigCommand.js";
+import { ModerationCommand } from "./moderation/ModerationCommand.js";
+import { OwnerCommand } from "./owner/OwnerCommand.js";
+import { MemoryCommand } from "./memory/MemoryCommand.js";
+import { handleStatsPrefix, handleStatsSlash } from "../telemetry/commands.js";
 
 const commands: Map<string, ICommand> = new Map();
 const aliases: Map<string, string> = new Map();

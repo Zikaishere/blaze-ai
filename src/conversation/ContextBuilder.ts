@@ -1,4 +1,4 @@
-import type { ChatContext } from "../types";
+import type { ChatContext } from "../types/index.js";
 import type { Message } from "discord.js";
 
 export function buildContext(

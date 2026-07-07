@@ -1,5 +1,5 @@
-import ServerDNA from "../models/ServerDNA";
-import type { IServerDNATraits } from "../models/ServerDNA";
+import ServerDNA from "../models/ServerDNA.js";
+import type { IServerDNATraits } from "../models/ServerDNA.js";
 import {
   DEFAULT_TRAITS,
   KNOWN_SLANG,
@@ -17,7 +17,7 @@ import {
   RESPONSE_LENGTH_SHORT,
   RESPONSE_LENGTH_LONG,
   MIN_CONFIDENCE,
-} from "./trait-definitions";
+} from "./trait-definitions.js";
 
 const WORD_SPLIT = /[^\w]+/g;
 const URL_PATTERN = /https?:\/\/\S+/g;

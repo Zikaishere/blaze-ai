@@ -1,6 +1,6 @@
-import { getSnapshots, getTotals } from "./recorder";
-import { drawLineChart, drawHorizontalBar, COLORS } from "./charts";
-import { buildSummaryCard } from "./card";
+import { getSnapshots, getTotals } from "./recorder.js";
+import { drawLineChart, drawHorizontalBar, COLORS } from "./charts.js";
+import { buildSummaryCard } from "./card.js";
 
 export async function render(type: string): Promise<Buffer | null> {
   const weekSnaps = await getSnapshots(168);

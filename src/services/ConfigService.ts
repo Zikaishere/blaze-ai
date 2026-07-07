@@ -1,6 +1,6 @@
-import GuildConfig from "../models/GuildConfig";
-import UserConfig from "../models/UserConfig";
-import { env } from "../config";
+import GuildConfig from "../models/GuildConfig.js";
+import UserConfig from "../models/UserConfig.js";
+import { env } from "../config/index.js";
 
 interface CacheEntry<T> {
   data: T;

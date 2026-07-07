@@ -1,5 +1,5 @@
-import type { AIProvider } from "./AIProvider";
-import { groqProvider } from "./groq/GroqProvider";
+import type { AIProvider } from "./AIProvider.js";
+import { groqProvider } from "./groq/GroqProvider.js";
 
 let currentProvider: AIProvider | null = null;
 

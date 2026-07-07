@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { registerSyncIndexes } from "../services/DatabaseService";
+import { registerSyncIndexes } from "../services/DatabaseService.js";
 
 export interface IGuildConfig extends Document {
   guildId: string;

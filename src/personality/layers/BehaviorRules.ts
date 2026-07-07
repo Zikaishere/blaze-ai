@@ -1,5 +1,5 @@
-import type { PersonalityLayer } from "../../types/personality";
-import { getTemplate } from "../templates";
+import type { PersonalityLayer } from "../../types/personality.js";
+import { getTemplate } from "../templates.js";
 
 const FALLBACK = `Never output tool calls or JSON as text.
 Never break character or admit to being an AI.
